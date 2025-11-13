@@ -1,138 +1,149 @@
 import { useState } from "react";
-import { supabase } from "../../lib/supabaseClient";
-import { useNavigate } from "react-router-dom";
+import { supabase } from "../../supabaseClient";
 
 export function SignupForm() {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [confirm, setConfirm] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const navigate = useNavigate();
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function handleSignup(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    setErrorMsg("");
+    setSuccessMsg("");
 
-    if (!username.trim()) {
-      setError("Username is required");
+    if (password !== confirmPassword) {
+      return setErrorMsg("Passwords do not match.");
+    }
+
+    setLoading(true);
+
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { username },
+      },
+    });
+
+    setLoading(false);
+
+    if (error) {
+      return setErrorMsg(error.message);
+    }
+
+    if (data.user && !data.session) {
+      setSuccessMsg("Account created! Please check your email to confirm.");
       return;
     }
-    if (password !== confirm) {
-      setError("Passwords do not match");
-      return;
+
+    // Insert into public.users
+    const user = data.user;
+
+    const { error: dbError } = await supabase.from("users").insert({
+      id: user.id,
+      email: user.email,
+      name: username,
+    });
+
+    if (dbError) {
+      return setErrorMsg("Account created, but profile setup failed.");
     }
 
-    try {
-      setLoading(true);
-
-      // sign up with Supabase email/password
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            username, // stored in auth.users.raw_user_meta_data
-          },
-        },
-      });
-
-      if (error) {
-        setError(error.message);
-        return;
-      }
-
-      const user = data.user;
-      if (!user) {
-        setError("Signup failed. Please try again.");
-        return;
-      }
-
-      // Also update username in public.users table
-      const { error: userUpdateError } = await supabase
-        .from("users")
-        .update({ username })
-        .eq("id", user.id);
-
-      if (userUpdateError) {
-        console.error("Failed to update username in public.users", userUpdateError);
-      }
-
-      // Redirect to profile setup
-      navigate("/profile-setup");
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message ?? "Unexpected error");
-    } finally {
-      setLoading(false);
-    }
-  };
+    setSuccessMsg("Account created successfully!");
+    setTimeout(() => (window.location.href = "/profile/ProfileSetup"), 1000);
+  }
 
   return (
-    <div className="max-w-md mx-auto bg-white rounded-xl shadow-md p-6 space-y-4">
-      <h2 className="text-2xl font-semibold text-gray-800 text-center">
-        Create your account
-      </h2>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Username</label>
-          <input
-            className="w-full border rounded-md px-3 py-2 text-sm"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="chef_prabhu"
-          />
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-black px-4">
+      <div className="bg-gray-800/70 backdrop-blur-xl border border-white/10 rounded-2xl p-8 w-full max-w-md shadow-2xl">
+        
+        <h1 className="text-3xl font-bold text-white mb-6 text-center">
+          Create your account
+        </h1>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Email</label>
-          <input
-            type="email"
-            className="w-full border rounded-md px-3 py-2 text-sm"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">Password</label>
-          <input
-            type="password"
-            className="w-full border rounded-md px-3 py-2 text-sm"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">Re-enter password</label>
-          <input
-            type="password"
-            className="w-full border rounded-md px-3 py-2 text-sm"
-            value={confirm}
-            onChange={(e) => setConfirm(e.target.value)}
-            placeholder="••••••••"
-          />
-        </div>
-
-        {error && (
-          <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-md px-3 py-2">
-            {error}
-          </p>
+        {errorMsg && (
+          <p className="text-red-400 text-sm mb-3 text-center">{errorMsg}</p>
         )}
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 rounded-md"
-        >
-          {loading ? "Creating account..." : "Sign up"}
-        </button>
-      </form>
+        {successMsg && (
+          <p className="text-green-400 text-sm mb-3 text-center">{successMsg}</p>
+        )}
+
+        <form onSubmit={handleSignup} className="space-y-5">
+          <div>
+            <label className="text-gray-300 text-sm">Username</label>
+            <input
+              type="text"
+              placeholder="chef_prabhu"
+              className="mt-1 w-full px-4 py-2 rounded-xl bg-gray-900/50 border border-gray-700 
+                       text-white focus:ring-2 focus:ring-emerald-400 outline-none"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="text-gray-300 text-sm">Email</label>
+            <input
+              type="email"
+              placeholder="you@example.com"
+              className="mt-1 w-full px-4 py-2 rounded-xl bg-gray-900/50 border border-gray-700 
+                       text-white focus:ring-2 focus:ring-emerald-400 outline-none"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="text-gray-300 text-sm">Password</label>
+            <input
+              type="password"
+              placeholder="••••••••"
+              className="mt-1 w-full px-4 py-2 rounded-xl bg-gray-900/50 border border-gray-700 
+                       text-white focus:ring-2 focus:ring-emerald-400 outline-none"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          <div>
+            <label className="text-gray-300 text-sm">Re-enter password</label>
+            <input
+              type="password"
+              placeholder="••••••••"
+              className="mt-1 w-full px-4 py-2 rounded-xl bg-gray-900/50 border border-gray-700 
+                       text-white focus:ring-2 focus:ring-emerald-400 outline-none"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+            />
+          </div>
+
+          <button
+            disabled={loading}
+            className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white font-semibold 
+                     rounded-xl transition-all shadow-lg disabled:opacity-50"
+          >
+            {loading ? "Signing up..." : "Sign up"}
+          </button>
+        </form>
+
+        <div className="text-center mt-4">
+          <span className="text-gray-400 text-sm">Already have an account?</span>{" "}
+          <a href="/login" className="text-emerald-400 text-sm hover:underline">
+            Log in
+          </a>
+        </div>
+      </div>
     </div>
   );
 }
+
