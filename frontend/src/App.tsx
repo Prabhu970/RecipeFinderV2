@@ -7,9 +7,11 @@ import { ShoppingListRoute } from './routes/shopping-list';
 import { AIGeneratorRoute } from './routes/ai-generator';
 import { ProfileRoute } from './routes/profile';
 
-import { SignupForm } from "./features/auth/SignupForm";
+import { SignupForm } from "./routes/auth/SignupForm";
 
 // ...
+import { LoginForm } from "./routes/auth/LoginForm";
+import { ProfileSetup } from "./routes/profile/ProfileSetup";
 
 
 
