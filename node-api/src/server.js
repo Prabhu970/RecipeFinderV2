@@ -3,7 +3,7 @@ import express from 'express';
 import cors from 'cors';
 
 // FIX HERE ⬇⬇⬇
-import { recipesRouter } from './routes/recipes.js';
+import { recipesRouter } from './recipes.js';
 // NOT: './recipes.js'
 
 import { ratingsRouter } from './ratings.js';
