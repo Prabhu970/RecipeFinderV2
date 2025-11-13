@@ -48,9 +48,7 @@ def ingredient_substitutions(payload: dict):
         "For the following recipe and its ingredients, suggest practical "
         "ingredient substitutions for a home cook. "
         "Return ONLY JSON of the form: "
-        "{\"suggestions\": [\"...\", "..."]}.
-
-"
+        "{\"suggestions\": [\"...\", "..."]}."
         f"Recipe: {title}\n"
         f"Ingredients: {ingredients}\n"
     )
