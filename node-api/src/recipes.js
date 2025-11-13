@@ -66,8 +66,7 @@ recipesRouter.get('/recommended', async (_req, res) => {
           tags ( name )
         )
       `)
-      .order('rating', { ascending: false })
-      .limit(24);
+      .order('rating', { ascending: false });
 
     if (error) throw error;
 
