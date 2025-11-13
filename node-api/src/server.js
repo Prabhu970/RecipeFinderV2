@@ -34,6 +34,9 @@ app.use('/shopping-list', shoppingRouter);
 app.use('/favorites', favoritesRouter);
 app.use('/profile', profileRouter);
 
-app.listen(port, () => {
-  console.log(`Node API listening on http://localhost:${port}`);
+const PORT = process.env.PORT || 8000;
+
+app.listen(PORT, () => {
+  console.log(`Node API running on port ${PORT}`);
 });
+
