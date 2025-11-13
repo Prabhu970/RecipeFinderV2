@@ -8,7 +8,7 @@ import { favoritesRouter } from './favorites.js';
 import { profileRouter } from './profile.js';
 
 
-const express = require("express");
+
 const app = express();
 
 app.use(cors({
