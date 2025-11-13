@@ -7,19 +7,19 @@ import { shoppingRouter } from './shoppingList.js';
 import { favoritesRouter } from './favorites.js';
 import { profileRouter } from './profile.js';
 
+const cors = require("cors");
+const express = require("express");
 const app = express();
-const port = process.env.PORT || 4000;
 
-app.use(
-  cors({
+app.use(cors({
     origin: [
-      "https://recipe-finder-v2-b8be.vercel.app",
-      "http://localhost:5173"
+        "https://recipe-finder-v2-b8be-apdzmsn8e.vercel.app",
+        "http://localhost:5173"
     ],
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
+    credentials: true,
+}));
+app.use(cors({ origin: "*"}));
+
 app.options("*", cors());
 
 app.use(express.json());
