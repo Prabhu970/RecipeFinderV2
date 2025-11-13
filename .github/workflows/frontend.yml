@@ -29,6 +29,12 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      - name: Create empty lockfile if missing
+        run: |
+          if [ ! -f package-lock.json ]; then
+              echo '{}' > package-lock.json
+          fi
+          
       - name: Install deps
         run: npm install
 
