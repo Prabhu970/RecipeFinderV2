@@ -1,13 +1,15 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import { recipesRouter } from './recipes.js';
+
+// FIX HERE ⬇⬇⬇
+import { recipesRouter } from './routes/recipes.js';
+// NOT: './recipes.js'
+
 import { ratingsRouter } from './ratings.js';
 import { shoppingRouter } from './shoppingList.js';
 import { favoritesRouter } from './favorites.js';
 import { profileRouter } from './profile.js';
-
-
 
 const app = express();
 
@@ -18,15 +20,11 @@ app.use(cors({
     ],
     credentials: true,
 }));
-app.use(cors({ origin: "*"}));
 
 app.options("*", cors());
-
 app.use(express.json());
 
-app.get('/health', (_req, res) => {
-  res.json({ status: 'ok' });
-});
+app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
 app.use('/recipes', recipesRouter);
 app.use('/ratings', ratingsRouter);
@@ -35,8 +33,6 @@ app.use('/favorites', favoritesRouter);
 app.use('/profile', profileRouter);
 
 const PORT = process.env.PORT || 8000;
-
 app.listen(PORT, () => {
   console.log(`Node API running on port ${PORT}`);
 });
-
