@@ -24,14 +24,11 @@ app.use(
     origin: function (origin, callback) {
       if (!origin) return callback(null, true);
 
-      if (
-        allowedOrigins.includes(origin) ||
-        origin.endsWith(".vercel.app")
-      ) {
+      if ( allowedOrigins.includes(origin) || origin.endsWith(".vercel.app") ) {
         return callback(null, true);
       }
 
-      console.log("❌ Blocked by CORS:", origin);
+      console.log(" Blocked by CORS:", origin);
       return callback(new Error("Not allowed by CORS"), false);
     },
     credentials: true,

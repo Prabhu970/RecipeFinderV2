@@ -7,6 +7,12 @@ import { ShoppingListRoute } from './routes/shopping-list';
 import { AIGeneratorRoute } from './routes/ai-generator';
 import { ProfileRoute } from './routes/profile';
 
+import { SignupForm } from "./features/auth/SignupForm";
+
+// ...
+
+
+
 const navClass = ({ isActive }: { isActive: boolean }) =>
   ['nav-link', isActive ? 'nav-link-active' : ''].join(' ').trim();
 
@@ -54,6 +60,11 @@ export default function App() {
             <Route path="/shopping-list" element={<ShoppingListRoute />} />
             <Route path="/ai-generator" element={<AIGeneratorRoute />} />
             <Route path="/profile" element={<ProfileRoute />} />
+            <Route path="/signup" element={<SignupForm />} />
+            <Route path="/login" element={<LoginForm />} />
+            import { ProfileSetup } from "./features/profile/ProfileSetup";
+<Route path="/profile-setup" element={<ProfileSetup />} />
+
           </Routes>
         </div>
       </main>

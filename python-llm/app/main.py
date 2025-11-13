@@ -6,61 +6,43 @@ import google.generativeai as genai
 
 app = FastAPI()
 
-# 🚀 Enable CORS (must be above routes)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # allow all for now; restrict later
+    allow_origins=["*"],  # or restrict to your Vercel URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# 🚀 Initialize Gemini API
 genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
-
 model = genai.GenerativeModel("gemini-1.5-flash")
 
-@app.get("/")
-def root():
-    return {"status": "python-llm running"}
 
 @app.post("/ingredient-substitutions")
 async def ingredient_substitutions(payload: dict):
-    ingredient = payload.get("ingredient", "").strip()
-    if not ingredient:
-        return {"error": "ingredient is required"}
+  title = payload.get("title", "")
+  ingredients = payload.get("ingredients", [])
 
-    prompt = f"""
-        "For the following ingredient, suggest practical substitutions for a home cook. "
-        "Respond ONLY in valid JSON of the form: "
-        {{
-        "suggestions": [
-            "substitute text 1",
-            "substitute text 2"
-        ]
-        }}
+  prompt = (
+      "You are an expert chef. Suggest practical ingredient substitutions for a home cook. "
+      "Respond ONLY in valid JSON of the form:\n"
+      "{ \"suggestions\": [\"substitution 1\", \"substitution 2\", \"substitution 3\"] }\n\n"
+      f"Recipe: {title}\n"
+      f"Ingredients: {', '.join(ingredients)}"
+  )
 
-        Ingredients: {", ".join(ingredient)}
-    """
+  try:
+      resp = model.generate_content(prompt)
+      raw = resp.text.strip()
 
-    try:
-        response = model.generate_content(prompt)
-        text = response.text.strip()
+      try:
+          data = json.loads(raw)
+          if "suggestions" in data and isinstance(data["suggestions"], list):
+              return data
+      except Exception:
+          pass
 
-        try:
-            data = json.loads(text)
-            if "suggestions" in data:
-                return data
-        except Exception:
-            pass
-
-        # Fallback if Gemini returns plain text
-        return {
-            "suggestions": [
-                f"No direct AI suggestions found.",
-                f"Raw output: {text}"
-            ]
-        }
-
-    except Exception as e:
-        return {"error": str(e)}
+      # Fallback
+      return {"suggestions": [raw]}
+  except Exception as e:
+      return {"suggestions": [f"Error from AI service: {str(e)}"]}
