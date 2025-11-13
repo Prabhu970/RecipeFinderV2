@@ -46,6 +46,12 @@ export default function App() {
             <NavLink to="/ai-generator" className={navClass}>
               AI Chef
             </NavLink>
+            <NavLink to="/signup" className={navClass}>
+              Profile
+            </NavLink>
+            <NavLink to="/login" className={navClass}>
+              Profile
+            </NavLink>
             <NavLink to="/profile" className={navClass}>
               Profile
             </NavLink>
