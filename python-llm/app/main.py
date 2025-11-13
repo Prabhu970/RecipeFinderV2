@@ -30,12 +30,18 @@ async def ingredient_substitutions(payload: dict):
     if not ingredient:
         return {"error": "ingredient is required"}
 
-    prompt = (
+    prompt = f"""
         "For the following ingredient, suggest practical substitutions for a home cook. "
         "Respond ONLY in valid JSON of the form: "
-        "{\"suggestions\": [\"...\"]}. "
-        f"Ingredient: {ingredient}"
-    )
+        {{
+        "suggestions": [
+            "substitute text 1",
+            "substitute text 2"
+        ]
+        }}
+
+        Ingredients: {", ".join(ingredient)}
+    """
 
     try:
         response = model.generate_content(prompt)
@@ -43,10 +49,18 @@ async def ingredient_substitutions(payload: dict):
 
         try:
             data = json.loads(text)
-        except:
-            data = {"suggestions": [text]}
+            if "suggestions" in data:
+                return data
+        except Exception:
+            pass
 
-        return data
+        # Fallback if Gemini returns plain text
+        return {
+            "suggestions": [
+                f"No direct AI suggestions found.",
+                f"Raw output: {text}"
+            ]
+        }
 
     except Exception as e:
         return {"error": str(e)}
