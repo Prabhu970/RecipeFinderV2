@@ -8,9 +8,16 @@ const port = process.env.PORT || 4000;
 
 app.use(
   cors({
-    origin: '*'
+    origin: [
+      "https://recipe-finder-v2-b8be.vercel.app",
+      "http://localhost:5173"
+    ],
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+app.options("*", cors());
+
 app.use(express.json());
 
 app.get('/health', (_req, res) => {
