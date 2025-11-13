@@ -1,20 +1,17 @@
-interface ErrorStateProps {
+export function ErrorState({
+  message,
+  onRetry
+}: {
   message?: string;
   onRetry?: () => void;
-}
-
-export function ErrorState({ message, onRetry }: ErrorStateProps) {
+}) {
   return (
-    <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
-      <p className="text-sm text-destructive">
+    <div className="stack" style={{ alignItems: 'center', padding: '2rem 0', textAlign: 'center' }}>
+      <p style={{ color: '#f97373', fontSize: '0.85rem' }}>
         {message ?? 'Something went wrong while loading your recipes.'}
       </p>
       {onRetry && (
-        <button
-          type="button"
-          onClick={onRetry}
-          className="inline-flex items-center rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
+        <button type="button" className="btn btn-primary btn-sm" onClick={onRetry}>
           Try again
         </button>
       )}

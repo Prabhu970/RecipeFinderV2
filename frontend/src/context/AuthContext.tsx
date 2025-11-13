@@ -20,7 +20,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const session = supabase.auth.getSession().then(({ data }) => {
+    supabase.auth.getSession().then(({ data }) => {
       setUser(data.session?.user ?? null);
       setLoading(false);
     });
@@ -37,21 +37,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   async function signInWithEmail(email: string) {
-    await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: window.location.origin } });
+    await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: window.location.origin }
+    });
   }
 
   async function signOut() {
     await supabase.auth.signOut();
   }
 
-  const value: AuthContextValue = {
-    user: user ? { id: user.id, email: user.email ?? undefined } : null,
-    loading,
-    signInWithEmail,
-    signOut
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{
+        user: user ? { id: user.id, email: user.email ?? undefined } : null,
+        loading,
+        signInWithEmail,
+        signOut
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

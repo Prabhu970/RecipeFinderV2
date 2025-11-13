@@ -1,33 +1,36 @@
 import { useFavoritesContext } from '../context/FavoritesContext';
-import { useRecipes } from '../hooks/useRecipes';
-import { RecipeGrid } from '../components/recipe/RecipeGrid';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../lib/api';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { RecipeGrid } from '../components/recipe/RecipeGrid';
 import { EmptyState } from '../components/common/EmptyState';
 
 export function FavoritesRoute() {
   const { favorites } = useFavoritesContext();
-  const { data, isLoading } = useRecipes();
+  const { data, isLoading } = useQuery({
+    queryKey: ['recipes', 'favorites'],
+    queryFn: () => api.getRecommendedRecipes()
+  });
 
-  if (isLoading) return <LoadingSpinner label="Loading your favorites..." />;
+  if (isLoading) return <LoadingSpinner label="Loading favorites..." />;
 
-  const favoriteRecipes = (data ?? []).filter((r) => favorites.includes(r.id));
+  const favRecipes = (data ?? []).filter((r) => favorites.includes(r.id));
 
-  if (favoriteRecipes.length === 0) {
+  if (favRecipes.length === 0) {
     return (
       <EmptyState
         title="No favorites yet"
-        description="Save recipes you love and they will show up here."
+        description="Tap the star on any recipe to save it here."
       />
     );
   }
 
   return (
-    <section className="space-y-4">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Your favorites</h1>
-        <p className="text-sm text-muted-foreground">Quick access to your saved recipes.</p>
-      </header>
-      <RecipeGrid recipes={favoriteRecipes} />
+    <section className="stack">
+      <div className="page-header">
+        <h1 className="page-title">Your favorites</h1>
+      </div>
+      <RecipeGrid recipes={favRecipes} />
     </section>
   );
 }

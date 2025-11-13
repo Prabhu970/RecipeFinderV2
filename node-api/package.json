@@ -7,8 +7,7 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "lint": "echo \"no lint configured\"",
-    "test": "node -e \"console.log('no backend tests yet')\""
+    "test": "node -e \"console.log('Node API tests placeholder');\""
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.48.0",

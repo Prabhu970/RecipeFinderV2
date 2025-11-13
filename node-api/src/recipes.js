@@ -4,7 +4,6 @@ import { generateAIRecipe } from './pythonClient.js';
 
 export const recipesRouter = express.Router();
 
-// GET /recipes/recommended
 recipesRouter.get('/recommended', async (_req, res) => {
   try {
     const { data, error } = await supabaseAdmin
@@ -31,7 +30,6 @@ recipesRouter.get('/recommended', async (_req, res) => {
   }
 });
 
-// GET /recipes/search?q=&diet=&maxTime=
 recipesRouter.get('/search', async (req, res) => {
   const { q, diet, maxTime } = req.query;
 
@@ -40,18 +38,11 @@ recipesRouter.get('/search', async (req, res) => {
       .from('recipes')
       .select('id,title,image_url,cook_time_minutes,difficulty,rating,tags');
 
-    if (q) {
-      query = query.ilike('title', `%${q}%`);
-    }
-    if (diet) {
-      query = query.contains('tags', [diet]);
-    }
-    if (maxTime) {
-      query = query.lte('cook_time_minutes', Number(maxTime));
-    }
+    if (q) query = query.ilike('title', `%${q}%`);
+    if (diet) query = query.contains('tags', [diet]);
+    if (maxTime) query = query.lte('cook_time_minutes', Number(maxTime));
 
     const { data, error } = await query.limit(48);
-
     if (error) throw error;
 
     const mapped = (data ?? []).map((r) => ({
@@ -71,9 +62,9 @@ recipesRouter.get('/search', async (req, res) => {
   }
 });
 
-// GET /recipes/:id
 recipesRouter.get('/:id', async (req, res) => {
   const { id } = req.params;
+
   try {
     const { data, error } = await supabaseAdmin
       .from('recipes')
@@ -105,7 +96,6 @@ recipesRouter.get('/:id', async (req, res) => {
   }
 });
 
-// POST /recipes/generate-ai
 recipesRouter.post('/generate-ai', async (req, res) => {
   try {
     const generated = await generateAIRecipe(req.body);

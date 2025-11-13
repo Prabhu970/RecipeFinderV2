@@ -1,12 +1,21 @@
-interface LoadingSpinnerProps {
-  label?: string;
-}
-
-export function LoadingSpinner({ label }: LoadingSpinnerProps) {
+export function LoadingSpinner({ label }: { label?: string }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-2 py-10">
-      <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-      {label && <p className="text-sm text-muted-foreground">{label}</p>}
+    <div className="stack" style={{ alignItems: 'center', padding: '2rem 0' }}>
+      <div
+        style={{
+          width: 26,
+          height: 26,
+          borderRadius: '999px',
+          border: '3px solid rgba(148,163,184,0.5)',
+          borderTopColor: '#22c55e',
+          animation: 'spin 0.7s linear infinite'
+        }}
+      />
+      {label && (
+        <p className="muted" style={{ fontSize: '0.8rem' }}>
+          {label}
+        </p>
+      )}
     </div>
   );
 }

@@ -14,5 +14,6 @@ export async function generateAIRecipe(payload) {
     const text = await res.text();
     throw new Error(text || res.statusText);
   }
+
   return res.json();
 }

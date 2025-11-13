@@ -17,72 +17,77 @@ export function ShoppingListRoute() {
     setText('');
   }
 
-  function toggleItem(id: number) {
+  function toggle(id: number) {
     setItems((prev) => prev.map((i) => (i.id === id ? { ...i, done: !i.done } : i)));
   }
 
-  function removeItem(id: number) {
-    setItems((prev) => prev.filter((i) => i.id !== id));
+  function remove(id: number) {
+    setItems((prev) => prev.filter((i) => i.id != id));
   }
 
   return (
-    <section className="space-y-4">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Shopping list</h1>
-        <p className="text-sm text-muted-foreground">
-          Turn your recipes into a clear checklist for the store.
+    <section className="stack">
+      <div className="page-header">
+        <h1 className="page-title">Shopping list</h1>
+        <p className="page-subtitle">
+          Turn recipes into a simple checklist for your next grocery run.
         </p>
-      </header>
-
+      </div>
       <form
-        className="flex gap-2"
         onSubmit={(e) => {
           e.preventDefault();
           addItem();
         }}
+        className="flex-row"
+        style={{ gap: '0.5rem', flexWrap: 'wrap' }}
       >
         <input
-          type="text"
+          className="input"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="2x chicken breast, 1x garlic..."
-          className="flex-1 h-9 rounded-md border px-2 text-sm bg-background"
+          placeholder="2x chicken breast, 1x garlic bulb..."
         />
-        <button
-          type="submit"
-          className="inline-flex h-9 items-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-        >
+        <button type="submit" className="btn btn-primary btn-sm">
           Add
         </button>
       </form>
-
       {items.length === 0 ? (
         <EmptyState
-          title="Your list is empty"
-          description="Add ingredients from recipes or manually type your own items."
+          title="No items yet"
+          description="Add ingredients from your recipes or from memory."
         />
       ) : (
-        <ul className="divide-y rounded-md border">
-          {items.map((item) => (
+        <ul style={{ listStyle: 'none', padding: 0, margin: '0.75rem 0' }}>
+          {items.map((i) => (
             <li
-              key={item.id}
-              className="flex items-center justify-between gap-3 px-3 py-2 text-sm"
+              key={i.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.35rem 0'
+              }}
             >
-              <label className="flex items-center gap-2 flex-1">
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
                 <input
                   type="checkbox"
-                  checked={item.done}
-                  onChange={() => toggleItem(item.id)}
-                  className="h-4 w-4 rounded border"
+                  checked={i.done}
+                  onChange={() => toggle(i.id)}
                 />
-                <span className={item.done ? 'line-through text-muted-foreground' : ''}>
-                  {item.text}
+                <span
+                  style={{
+                    fontSize: '0.85rem',
+                    textDecoration: i.done ? 'line-through' : 'none',
+                    color: i.done ? '#6b7280' : undefined
+                  }}
+                >
+                  {i.text}
                 </span>
               </label>
               <button
                 type="button"
-                onClick={() => removeItem(item.id)}
-                className="text-xs text-muted-foreground hover:text-destructive"
+                className="btn btn-ghost btn-sm"
+                onClick={() => remove(i.id)}
               >
                 Remove
               </button>

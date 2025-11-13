@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
 import { RecipeGrid } from '../components/recipe/RecipeGrid';
+import { RecipeFilters } from '../components/recipe/RecipeFilters';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { EmptyState } from '../components/common/EmptyState';
-import { RecipeFilters } from '../components/recipe/RecipeFilters';
 
 export function SearchRoute() {
   const [query, setQuery] = useState('');
@@ -18,20 +18,17 @@ export function SearchRoute() {
     enabled: submitted
   });
 
-  const handleSubmit = () => {
+  function handleSubmit() {
     setSubmitted(true);
     searchQuery.refetch();
-  };
+  }
 
   return (
-    <section className="space-y-4">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight">Search recipes</h1>
-        <p className="text-sm text-muted-foreground">
-          Filter by dietary needs, cooking time and more.
-        </p>
-      </header>
-
+    <section className="stack">
+      <div className="page-header">
+        <h1 className="page-title">Find the perfect recipe</h1>
+        <p className="page-subtitle">Use filters to narrow things down.</p>
+      </div>
       <RecipeFilters
         query={query}
         onQueryChange={setQuery}
@@ -41,16 +38,10 @@ export function SearchRoute() {
         onMaxTimeChange={setMaxTime}
         onSubmit={handleSubmit}
       />
-
-      {searchQuery.isLoading && <LoadingSpinner label="Finding matching recipes..." />}
-
+      {searchQuery.isLoading && <LoadingSpinner label="Searching recipes..." />}
       {searchQuery.isSuccess && (searchQuery.data?.length ?? 0) === 0 && (
-        <EmptyState
-          title="No recipes found"
-          description="Try adjusting your filters or searching for a more general term."
-        />
+        <EmptyState title="No recipes found" description="Try changing or removing filters." />
       )}
-
       {searchQuery.isSuccess && searchQuery.data && searchQuery.data.length > 0 && (
         <RecipeGrid recipes={searchQuery.data} />
       )}

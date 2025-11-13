@@ -1,45 +1,36 @@
 import { Link } from 'react-router-dom';
-import { Card, CardContent } from '../ui/card';
+import type { RecipeSummary } from '../../lib/api';
+import { Card, CardBody } from '../ui/card';
 import { Badge } from '../ui/badge';
 
-import type { RecipeSummary } from '../../lib/api';
-
-interface RecipeCardProps {
-  recipe: RecipeSummary;
-}
-
-export function RecipeCard({ recipe }: RecipeCardProps) {
+export function RecipeCard({ recipe }: { recipe: RecipeSummary }) {
   return (
-    <Link to={`/recipes/${recipe.id}`} className="block">
-      <Card className="overflow-hidden hover:shadow-md transition-shadow h-full">
-        <CardContent className="p-0 flex flex-col h-full">
-          {recipe.imageUrl && (
-            <div className="aspect-video overflow-hidden">
-              <img
-                src={recipe.imageUrl}
-                alt={recipe.title}
-                className="h-full w-full object-cover transition-transform duration-200 hover:scale-105"
-              />
+    <Link to={`/recipes/${recipe.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+      <Card>
+        {recipe.imageUrl && (
+          <div style={{ aspectRatio: '16 / 9', overflow: 'hidden' }}>
+            <img
+              src={recipe.imageUrl}
+              alt={recipe.title}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          </div>
+        )}
+        <CardBody>
+          <h3 className="card-title">{recipe.title}</h3>
+          <p className="card-meta">
+            {recipe.cookTimeMinutes && `${recipe.cookTimeMinutes} min`}
+            {recipe.difficulty && ` · ${recipe.difficulty}`}
+            {typeof recipe.rating === 'number' && ` · ⭐ ${recipe.rating.toFixed(1)}`}
+          </p>
+          {recipe.tags && recipe.tags.length > 0 && (
+            <div className="card-tags">
+              {recipe.tags.slice(0, 3).map((tag) => (
+                <Badge key={tag}>{tag}</Badge>
+              ))}
             </div>
           )}
-          <div className="flex-1 p-4 flex flex-col gap-2">
-            <h3 className="font-semibold line-clamp-2">{recipe.title}</h3>
-            <div className="flex flex-wrap gap-1 text-xs text-muted-foreground">
-              {recipe.cookTimeMinutes && <span>{recipe.cookTimeMinutes} min</span>}
-              {recipe.difficulty && <span>• {recipe.difficulty}</span>}
-              {typeof recipe.rating === 'number' && <span>• ⭐ {recipe.rating.toFixed(1)}</span>}
-            </div>
-            {recipe.tags && recipe.tags.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1">
-                {recipe.tags.slice(0, 3).map((tag) => (
-                  <Badge key={tag} variant="outline">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
-        </CardContent>
+        </CardBody>
       </Card>
     </Link>
   );

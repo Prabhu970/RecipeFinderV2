@@ -5,10 +5,6 @@ export function ProfileRoute() {
   const { user, loading, signInWithEmail, signOut } = useAuth();
   const [email, setEmail] = useState('');
 
-  if (loading) {
-    return <p className="text-sm text-muted-foreground">Checking your session...</p>;
-  }
-
   async function handleSignIn(e: FormEvent) {
     e.preventDefault();
     if (!email) return;
@@ -16,45 +12,47 @@ export function ProfileRoute() {
     alert('Check your email for a magic link to sign in.');
   }
 
-  return (
-    <section className="space-y-4 max-w-md">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Profile</h1>
-        <p className="text-sm text-muted-foreground">
-          Sign in to sync your favorites and settings across devices.
+  if (loading) {
+    return (
+      <section className="stack">
+        <p className="muted" style={{ fontSize: '0.8rem' }}>
+          Checking your session...
         </p>
-      </header>
+      </section>
+    );
+  }
 
+  return (
+    <section className="stack" style={{ maxWidth: 360 }}>
+      <div className="page-header">
+        <h1 className="page-title">Profile</h1>
+        <p className="page-subtitle">
+          Sign in to sync your experience across devices.
+        </p>
+      </div>
       {user ? (
-        <div className="space-y-3">
-          <p className="text-sm">
-            Signed in as <span className="font-medium">{user.email ?? user.id}</span>
+        <>
+          <p style={{ fontSize: '0.85rem' }}>
+            Signed in as <strong>{user.email ?? user.id}</strong>
           </p>
-          <button
-            type="button"
-            onClick={signOut}
-            className="inline-flex h-9 items-center rounded-md border px-3 text-sm font-medium hover:bg-muted"
-          >
+          <button className="btn btn-ghost btn-sm" type="button" onClick={signOut}>
             Sign out
           </button>
-        </div>
+        </>
       ) : (
-        <form className="space-y-3" onSubmit={handleSignIn}>
-          <div className="space-y-1">
-            <label className="text-xs font-medium text-muted-foreground">Email</label>
+        <form className="stack" onSubmit={handleSignIn}>
+          <div className="form-row">
+            <span className="label">Email</span>
             <input
+              className="input"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="you@example.com"
-              className="w-full h-9 rounded-md border px-2 text-sm bg-background"
               required
             />
           </div>
-          <button
-            type="submit"
-            className="inline-flex h-9 items-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
+          <button className="btn btn-primary" type="submit">
             Send magic link
           </button>
         </form>

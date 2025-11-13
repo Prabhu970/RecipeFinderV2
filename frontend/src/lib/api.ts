@@ -38,7 +38,6 @@ export const api = {
         .filter(([, v]) => v !== undefined && v !== '')
         .map(([k, v]) => [k, String(v)])
     );
-
     const res = await fetch(`${NODE_API_URL}/recipes/search?${query.toString()}`);
     return handleResponse<RecipeSummary[]>(res);
   },

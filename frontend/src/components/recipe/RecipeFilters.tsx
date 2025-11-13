@@ -1,10 +1,10 @@
-interface RecipeFiltersProps {
+interface Props {
   query: string;
-  onQueryChange: (value: string) => void;
+  onQueryChange: (v: string) => void;
   diet: string;
-  onDietChange: (value: string) => void;
+  onDietChange: (v: string) => void;
   maxTime: number | null;
-  onMaxTimeChange: (value: number | null) => void;
+  onMaxTimeChange: (v: number | null) => void;
   onSubmit: () => void;
 }
 
@@ -16,56 +16,51 @@ export function RecipeFilters({
   maxTime,
   onMaxTimeChange,
   onSubmit
-}: RecipeFiltersProps) {
+}: Props) {
   return (
     <form
-      className="flex flex-wrap gap-2 items-end"
       onSubmit={(e) => {
         e.preventDefault();
         onSubmit();
       }}
+      className="flex-row"
+      style={{ gap: '0.6rem', flexWrap: 'wrap', alignItems: 'flex-end' }}
     >
-      <div className="flex flex-col gap-1">
-        <label className="text-xs font-medium text-muted-foreground">Search</label>
+      <div className="form-row" style={{ minWidth: 180 }}>
+        <span className="label">Search</span>
         <input
-          type="text"
+          className="input"
           value={query}
           onChange={(e) => onQueryChange(e.target.value)}
-          placeholder="Chicken, pasta, quick dinner..."
-          className="h-9 rounded-md border px-2 text-sm bg-background"
+          placeholder="chicken, pasta..."
         />
       </div>
-      <div className="flex flex-col gap-1">
-        <label className="text-xs font-medium text-muted-foreground">Diet</label>
+      <div className="form-row" style={{ minWidth: 140 }}>
+        <span className="label">Diet</span>
         <select
+          className="select"
           value={diet}
           onChange={(e) => onDietChange(e.target.value)}
-          className="h-9 rounded-md border px-2 text-sm bg-background"
         >
           <option value="">Any</option>
           <option value="vegetarian">Vegetarian</option>
           <option value="vegan">Vegan</option>
           <option value="gluten-free">Gluten-free</option>
-          <option value="keto">Keto</option>
         </select>
       </div>
-      <div className="flex flex-col gap-1">
-        <label className="text-xs font-medium text-muted-foreground">Max time (min)</label>
+      <div className="form-row" style={{ width: 120 }}>
+        <span className="label">Max time</span>
         <input
+          className="input"
           type="number"
-          min={0}
           value={maxTime ?? ''}
-          onChange={(e) => {
-            const v = e.target.value;
-            onMaxTimeChange(v === '' ? null : Number(v));
-          }}
-          className="h-9 w-28 rounded-md border px-2 text-sm bg-background"
+          min={0}
+          onChange={(e) =>
+            onMaxTimeChange(e.target.value === '' ? null : Number(e.target.value))
+          }
         />
       </div>
-      <button
-        type="submit"
-        className="inline-flex h-9 items-center rounded-md bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-      >
+      <button type="submit" className="btn btn-primary btn-sm">
         Search
       </button>
     </form>
