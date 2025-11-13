@@ -45,12 +45,12 @@ def ingredient_substitutions(payload: dict):
         }
 
     prompt = (
-        "For the following recipe and its ingredients, suggest practical "
-        "ingredient substitutions for a home cook. "
-        "Return ONLY JSON of the form: "
-        "{\"suggestions\": [\"...\", "..."]}."
-        f"Recipe: {title}\n"
-        f"Ingredients: {ingredients}\n"
+        "For the following recipe and its ingredients, suggest practical "+
+        "ingredient substitutions for a home cook. "+
+        "Return ONLY JSON of the form: "+
+        "{\"suggestions\": [\"...\", "..."]}."+
+        f"Recipe: {title}\n"+
+        f"Ingredients: {ingredients}\n"+
     )
 
     resp = model.generate_content(prompt)
