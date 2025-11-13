@@ -1,93 +1,78 @@
-import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '../lib/api';
+import { supabase } from '../lib/supabaseClient';
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { EmptyState } from '../components/common/EmptyState';
 
-interface Item {
-  id: number;
-  text: string;
-  done: boolean;
-}
-
 export function ShoppingListRoute() {
-  const [items, setItems] = useState<Item[]>([]);
-  const [text, setText] = useState('');
+  const queryClient = useQueryClient();
 
-  function addItem() {
-    if (!text.trim()) return;
-    setItems((prev) => [...prev, { id: Date.now(), text: text.trim(), done: false }]);
-    setText('');
+  const listQuery = useQuery({
+    queryKey: ['shopping-list'],
+    queryFn: async () => {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error('Not signed in');
+      return api.getShoppingList(token);
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error('Not signed in');
+      return api.deleteShoppingItem(id, token);
+    },
+    onSuccess: () => queryClient.invalidateQueries(['shopping-list'])
+  });
+
+  if (listQuery.isLoading) {
+    return <LoadingSpinner label="Loading your shopping list..." />;
   }
 
-  function toggle(id: number) {
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, done: !i.done } : i)));
+  if (listQuery.isError) {
+    return (
+      <EmptyState
+        title="Sign in required"
+        description="Sign in to sync your shopping list across devices."
+      />
+    );
   }
 
-  function remove(id: number) {
-    setItems((prev) => prev.filter((i) => i.id != id));
-  }
+  const items = listQuery.data ?? [];
 
   return (
     <section className="stack">
       <div className="page-header">
         <h1 className="page-title">Shopping list</h1>
         <p className="page-subtitle">
-          Turn recipes into a simple checklist for your next grocery run.
+          Ingredients you&apos;ve added from recipes appear here, synced via Supabase.
         </p>
       </div>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          addItem();
-        }}
-        className="flex-row"
-        style={{ gap: '0.5rem', flexWrap: 'wrap' }}
-      >
-        <input
-          className="input"
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          placeholder="2x chicken breast, 1x garlic bulb..."
-        />
-        <button type="submit" className="btn btn-primary btn-sm">
-          Add
-        </button>
-      </form>
+
       {items.length === 0 ? (
         <EmptyState
-          title="No items yet"
-          description="Add ingredients from your recipes or from memory."
+          title="Your list is empty"
+          description="Open any recipe and use “Add ingredients” to start building your list."
         />
       ) : (
-        <ul style={{ listStyle: 'none', padding: 0, margin: '0.75rem 0' }}>
-          {items.map((i) => (
+        <ul className="stack">
+          {items.map((item: any) => (
             <li
-              key={i.id}
+              key={item.id}
+              className="flex-row"
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.35rem 0'
+                justifyContent: 'space-between',
+                borderBottom: '1px solid rgba(31,41,55,1)',
+                padding: '0.4rem 0'
               }}
             >
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flex: 1 }}>
-                <input
-                  type="checkbox"
-                  checked={i.done}
-                  onChange={() => toggle(i.id)}
-                />
-                <span
-                  style={{
-                    fontSize: '0.85rem',
-                    textDecoration: i.done ? 'line-through' : 'none',
-                    color: i.done ? '#6b7280' : undefined
-                  }}
-                >
-                  {i.text}
-                </span>
-              </label>
+              <span>{item.item}</span>
               <button
                 type="button"
                 className="btn btn-ghost btn-sm"
-                onClick={() => remove(i.id)}
+                onClick={() => deleteMutation.mutate(item.id)}
               >
                 Remove
               </button>
