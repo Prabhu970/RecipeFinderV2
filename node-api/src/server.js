@@ -7,7 +7,7 @@ import { shoppingRouter } from './shoppingList.js';
 import { favoritesRouter } from './favorites.js';
 import { profileRouter } from './profile.js';
 
-const cors = require("cors");
+
 const express = require("express");
 const app = express();
 
