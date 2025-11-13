@@ -4,11 +4,7 @@ import { generateAIRecipe } from './pythonClient.js';
 
 export const recipesRouter = express.Router();
 
-// ---------------------
-// Helper mappers
-// ---------------------
 function mapTags(row) {
-  // row.recipe_tags is an array like [{ tags: { name: 'vegan' } }, ...]
   return (row.recipe_tags ?? [])
     .map((rt) => rt.tags?.name)
     .filter(Boolean);
@@ -22,7 +18,7 @@ function mapRecipeSummary(row) {
     cookTimeMinutes: row.cook_time_minutes,
     difficulty: row.difficulty,
     rating: row.rating,
-    tags: mapTags(row)
+    tags: mapTags(row),
   };
 }
 
@@ -47,14 +43,12 @@ function mapRecipeDetail(row) {
     tags,
     ingredients,
     steps,
-    servings: null,        // you can add column later if needed
-    calories: row.calories
+    servings: null,
+    calories: row.calories,
   };
 }
 
-// ---------------------
-// GET /recipes/recommended
-// ---------------------
+// ---- GET /recipes/recommended ----
 recipesRouter.get('/recommended', async (_req, res) => {
   try {
     const { data, error } = await supabaseAdmin
@@ -69,9 +63,7 @@ recipesRouter.get('/recommended', async (_req, res) => {
         rating,
         calories,
         recipe_tags (
-          tags (
-            name
-          )
+          tags ( name )
         )
       `)
       .order('rating', { ascending: false })
@@ -79,17 +71,14 @@ recipesRouter.get('/recommended', async (_req, res) => {
 
     if (error) throw error;
 
-    const mapped = (data ?? []).map(mapRecipeSummary);
-    res.json(mapped);
+    res.json((data ?? []).map(mapRecipeSummary));
   } catch (err) {
     console.error('Error in /recipes/recommended', err);
     res.status(500).send('Failed to load recipes');
   }
 });
 
-// ---------------------
-// GET /recipes/search
-// ---------------------
+// ---- GET /recipes/search ----
 recipesRouter.get('/search', async (req, res) => {
   const { q, diet, maxTime } = req.query;
 
@@ -106,9 +95,7 @@ recipesRouter.get('/search', async (req, res) => {
         rating,
         calories,
         recipe_tags (
-          tags (
-            name
-          )
+          tags ( name )
         )
       `);
 
@@ -121,19 +108,17 @@ recipesRouter.get('/search', async (req, res) => {
 
     let mapped = (data ?? []).map(mapRecipeSummary);
 
-    // Filter by diet/tag in Node (since tags live in separate tables)
     if (diet) {
-      const dietLower = String(diet).toLowerCase();
+      const dietLower = diet.toLowerCase();
       mapped = mapped.filter((r) =>
         (r.tags ?? []).some((t) => t.toLowerCase() === dietLower)
       );
     }
 
-    // Filter by maxTime in Node
     if (maxTime) {
       const max = Number(maxTime);
       mapped = mapped.filter(
-        (r) => r.cookTimeMinutes == null || r.cookTimeMinutes <= max
+        (r) => !r.cookTimeMinutes || r.cookTimeMinutes <= max
       );
     }
 
@@ -144,9 +129,7 @@ recipesRouter.get('/search', async (req, res) => {
   }
 });
 
-// ---------------------
-// GET /recipes/:id
-// ---------------------
+// ---- GET /recipes/:id ----
 recipesRouter.get('/:id', async (req, res) => {
   const { id } = req.params;
 
@@ -162,19 +145,9 @@ recipesRouter.get('/:id', async (req, res) => {
         difficulty,
         rating,
         calories,
-        ingredients (
-          name,
-          quantity
-        ),
-        steps (
-          step_number,
-          instruction
-        ),
-        recipe_tags (
-          tags (
-            name
-          )
-        )
+        ingredients ( name, quantity ),
+        steps ( step_number, instruction ),
+        recipe_tags ( tags ( name ) )
       `)
       .eq('id', id)
       .maybeSingle();
@@ -182,18 +155,14 @@ recipesRouter.get('/:id', async (req, res) => {
     if (error) throw error;
     if (!data) return res.status(404).send('Recipe not found');
 
-    const mapped = mapRecipeDetail(data);
-    res.json(mapped);
+    res.json(mapRecipeDetail(data));
   } catch (err) {
     console.error('Error in /recipes/:id', err);
     res.status(500).send('Failed to load recipe');
   }
 });
 
-// ---------------------
-// POST /recipes/generate-ai
-// (still just calls Python; Python side can insert into DB)
-// ---------------------
+// ---- POST /recipes/generate-ai ----
 recipesRouter.post('/generate-ai', async (req, res) => {
   try {
     const generated = await generateAIRecipe(req.body);
