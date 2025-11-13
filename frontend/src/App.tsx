@@ -10,7 +10,7 @@ import { ProfileRoute } from './routes/profile';
 import { SignupForm } from "./routes/auth/SignupForm";
 
 // ...
-import { LoginForm } from "./routes/auth/LoginForm";
+import  LoginForm  from "./routes/auth/LoginForm";
 import { ProfileSetup } from "./routes/profile/ProfileSetup";
 
 
