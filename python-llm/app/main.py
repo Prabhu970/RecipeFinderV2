@@ -2,53 +2,49 @@ import os
 import json
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from google import genai
+import google.generativeai as genai
 
 app = FastAPI()
 
-
+# 🚀 Enable CORS (must be above routes)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "*",  # for now allow all; tighten later
-    ],
+    allow_origins=["*"],   # allow all for now; restrict later
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-client = genai.Client(api_key=os.getenv("GOOGLE_API_KEY"))
+# 🚀 Initialize Gemini API
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 @app.get("/")
 def root():
-    return {"status": "python-llm is running"}
+    return {"status": "python-llm running"}
 
 @app.post("/ingredient-substitutions")
 async def ingredient_substitutions(payload: dict):
-    ingredient = payload.get("ingredient")
+    ingredient = payload.get("ingredient", "").strip()
     if not ingredient:
         return {"error": "ingredient is required"}
 
     prompt = (
-        "For the following ingredient, suggest practical substitutions "
-        "for a home cook. Respond ONLY in valid JSON of the form: "
+        "For the following ingredient, suggest practical substitutions for a home cook. "
+        "Respond ONLY in valid JSON of the form: "
         "{\"suggestions\": [\"...\"]}. "
         f"Ingredient: {ingredient}"
     )
 
     try:
-        response = client.models.generate_content(
-            model="gemini-1.5-flash",
-            contents=prompt
-        )
+        response = model.generate_content(prompt)
+        text = response.text.strip()
 
-        raw = response.text.strip()
-
-        # Try parsing JSON
         try:
-            data = json.loads(raw)
+            data = json.loads(text)
         except:
-            data = {"suggestions": [raw]}
+            data = {"suggestions": [text]}
 
         return data
 
