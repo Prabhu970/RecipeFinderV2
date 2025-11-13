@@ -1,0 +1,16 @@
+
+name: Python LLM CI + Deploy
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'python-llm/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy Python LLM to Render
+        run: echo "Add Render deploy using RENDER_API_KEY"

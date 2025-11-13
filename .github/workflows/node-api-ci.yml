@@ -1,0 +1,16 @@
+
+name: Node API CI + Deploy
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'node-api/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy Node API to Render
+        run: echo "Add Render deploy using RENDER_API_KEY"
