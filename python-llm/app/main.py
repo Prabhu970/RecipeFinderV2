@@ -1,3 +1,4 @@
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .schemas import GenerateRecipeRequest, RecipeDetail
@@ -21,6 +22,17 @@ def health():
 @app.post("/generate-recipe", response_model=RecipeDetail)
 def generate_recipe_endpoint(req: GenerateRecipeRequest):
     return generate_recipe(req)
+
+app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # OR put specific domains
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 from .llm_client import model
 import json
