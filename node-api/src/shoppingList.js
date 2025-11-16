@@ -41,8 +41,9 @@ shoppingRouter.post("/", async (req, res) => {
     }
 
     const rows = items.map((item) => ({
-      item,
-      recipe_id: recipeId ?? null,
+      ingredient:item,
+      quantity: item.quantity || null,
+      checked: false,
       user_id: userId,
     }));
 
