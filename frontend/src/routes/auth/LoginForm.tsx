@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabaseClient";
+import { Card, CardBody } from "../../components/ui/card";
+import { Input } from "../../components/ui/input";
+import { Button } from "../../components/ui/button";
 
 export default function LoginForm() {
   const navigate = useNavigate();
@@ -30,95 +33,150 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-to-br from-[#0f172a] to-[#1e293b]">
-      <div className="w-full max-w-md bg-white/10 backdrop-blur-xl rounded-2xl p-8 shadow-2xl border border-white/10">
+    <div
+      style={{
+        minHeight: "calc(100vh - 4rem)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        padding: "1rem",
+      }}
+    >
+      <Card
+        style={{
+          width: "100%",
+          maxWidth: "450px",
+          borderRadius: "16px",
+          padding: "2rem",
+          background: "rgba(255,255,255,0.08)",
+          backdropFilter: "blur(12px)",
+          border: "1px solid rgba(255,255,255,0.12)",
+        }}
+      >
+        <CardBody>
+          <h1
+            style={{
+              fontSize: "1.8rem",
+              fontWeight: "bold",
+              textAlign: "center",
+              marginBottom: "0.5rem",
+            }}
+          >
+            Welcome back
+          </h1>
 
-        {/* Header */}
-        <h1 className="text-2xl font-bold text-center mb-2 text-white">
-          Welcome back
-        </h1>
-        <p className="text-center text-gray-300 mb-6">
-          Enter your credentials to access your account
-        </p>
+          <p
+            style={{
+              textAlign: "center",
+              opacity: 0.8,
+              marginBottom: "1.5rem",
+              fontSize: "0.95rem",
+            }}
+          >
+            Enter your credentials to access your account
+          </p>
 
-        {/* Error message */}
-        {errorMsg && (
-          <div className="mb-4 p-3 rounded bg-red-900/40 border border-red-700 text-red-300 text-sm">
-            {errorMsg}
-          </div>
-        )}
+          {errorMsg && (
+            <div
+              style={{
+                marginBottom: "1rem",
+                padding: "0.75rem",
+                borderRadius: "8px",
+                background: "rgba(255,0,0,0.15)",
+                border: "1px solid rgba(255,0,0,0.35)",
+                color: "#ffb3b3",
+                fontSize: "0.9rem",
+              }}
+            >
+              {errorMsg}
+            </div>
+          )}
 
-        {/* Form */}
-        <form onSubmit={handleLogin} className="space-y-5">
-
-          {/* Email */}
-          <div className="space-y-1">
-            <label className="text-gray-200 text-sm">Email</label>
-            <input
-              type="email"
-              placeholder="name@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full px-3 py-2 rounded-lg bg-white/20 text-white placeholder-gray-300 border border-white/20 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
-          </div>
-
-          {/* Password */}
-          <div className="space-y-1">
-            <div className="flex justify-between items-center">
-              <label className="text-gray-200 text-sm">Password</label>
-              <span className="text-blue-400 text-sm hover:underline cursor-pointer">
-                Forgot?
-              </span>
+          <form onSubmit={handleLogin} style={{ display: "grid", gap: "1rem" }}>
+            {/* EMAIL */}
+            <div>
+              <label style={{ fontSize: "0.9rem" }}>Email</label>
+              <Input
+                type="email"
+                placeholder="name@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                style={{ marginTop: "0.3rem" }}
+              />
             </div>
 
-            <input
-              type="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              className="w-full px-3 py-2 rounded-lg bg-white/20 text-white placeholder-gray-300 border border-white/20 focus:outline-none focus:ring-2 focus:ring-blue-400"
-            />
+            {/* PASSWORD */}
+            <div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginBottom: "0.3rem",
+                }}
+              >
+                <label style={{ fontSize: "0.9rem" }}>Password</label>
+                <span
+                  style={{ fontSize: "0.85rem", color: "#4ea1ff", cursor: "pointer" }}
+                >
+                  Forgot?
+                </span>
+              </div>
+
+              <Input
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+
+            <Button type="submit" disabled={loading}>
+              {loading ? "Signing in..." : "Sign In"}
+            </Button>
+          </form>
+
+          {/* DIVIDER */}
+          <div
+            style={{
+              margin: "1.5rem 0",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+          >
+            <div style={{ flexGrow: 1, height: "1px", background: "rgba(255,255,255,0.2)" }} />
+            <span style={{ fontSize: "0.8rem", opacity: 0.7 }}>Or continue with</span>
+            <div style={{ flexGrow: 1, height: "1px", background: "rgba(255,255,255,0.2)" }} />
           </div>
 
-          {/* Sign in button */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2 rounded-lg bg-blue-500 hover:bg-blue-600 transition text-white text-lg font-medium shadow-lg"
+          {/* SOCIAL BUTTONS */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: "1rem",
+            }}
           >
-            {loading ? "Signing in..." : "Sign In"}
-          </button>
-        </form>
+            <Button variant="outline">G Google</Button>
+            <Button variant="outline">🐙 GitHub</Button>
+          </div>
 
-        {/* Divider */}
-        <div className="my-8 flex items-center">
-          <div className="flex-grow h-px bg-white/20"></div>
-          <span className="px-3 text-gray-300 text-sm">Or continue with</span>
-          <div className="flex-grow h-px bg-white/20"></div>
-        </div>
-
-        {/* Social buttons */}
-        <div className="grid grid-cols-2 gap-4">
-          <button className="flex items-center justify-center gap-2 py-2 rounded-lg bg-white/20 text-white border border-white/20 hover:bg-white/30 transition">
-            <span className="text-xl">G</span> Google
-          </button>
-          <button className="flex items-center justify-center gap-2 py-2 rounded-lg bg-white/20 text-white border border-white/20 hover:bg-white/30 transition">
-            <span className="text-xl">🐙</span> GitHub
-          </button>
-        </div>
-
-        {/* Footer */}
-        <p className="text-center text-gray-300 mt-6">
-          Don’t have an account?{" "}
-          <Link to="/signup" className="text-blue-400 hover:underline">
-            Sign up
-          </Link>
-        </p>
-
-      </div>
+          <p
+            style={{
+              textAlign: "center",
+              marginTop: "1.5rem",
+              opacity: 0.85,
+            }}
+          >
+            Don’t have an account?{" "}
+            <Link to="/signup" style={{ color: "#4ea1ff" }}>
+              Sign up
+            </Link>
+          </p>
+        </CardBody>
+      </Card>
     </div>
   );
 }
