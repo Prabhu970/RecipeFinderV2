@@ -1,6 +1,7 @@
 import express from 'express';
 import { supabaseAdmin } from './supabaseClient.js';
 import { generateAIRecipe } from './pythonClient.js';
+import fetch from "node-fetch";
 
 export const recipesRouter = express.Router();
 
@@ -47,34 +48,55 @@ function mapRecipeDetail(row) {
     calories: row.calories,
   };
 }
+function containsAllergen(ingredients, allergies) {
+  if (!allergies || allergies.length === 0) return false;
+  const text = ingredients.join(" ").toLowerCase();
+
+  return allergies.some(a => text.includes(a.toLowerCase()));
+}
+
+
+
+async function isRecipeUnsafe(allergies, ingredients) {
+  const res = await fetch(`${process.env.PYTHON_LLM_URL}/check-allergy`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ allergies, ingredients })
+  });
+
+  return await res.json(); // { unsafe: true/false, reason: "" }
+}
+
 
 // ---- GET /recipes/recommended ----
 recipesRouter.get('/recommended', async (_req, res) => {
-  try {
-    const { data, error } = await supabaseAdmin
-      .from('recipes')
-      .select(`
-        id,
-        title,
-        description,
-        image_url,
-        cook_time_minutes,
-        difficulty,
-        rating,
-        calories,
-        recipe_tags (
-          tags ( name )
-        )
-      `)
-      .order('rating', { ascending: false });
+  const userId = req.headers["user-id"];
 
-    if (error) throw error;
+  // 1) Get all recipes
+  const { data: recipes, error } = await supabase
+    .from("recipes")
+    .select("*");
 
-    res.json((data ?? []).map(mapRecipeSummary));
-  } catch (err) {
-    console.error('Error in /recipes/recommended', err);
-    res.status(500).send('Failed to load recipes');
-  }
+  if (error) return res.status(500).json({ error: error.message });
+
+  // 2) Fetch user allergies
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("allergies")
+    .eq("id", userId)
+    .single();
+
+  const allergies = profile?.allergies || "";
+
+  // 3) Ask Python LLM to separate safe/unsafe
+  const py = await fetch(`${process.env.PYTHON_LLM_URL}/filter-recipes-by-allergy`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ allergies, recipes }),
+  });
+
+  const filtered = await py.json();
+  return res.json(filtered);
 });
 
 // ---- GET /recipes/search ----
@@ -120,8 +142,16 @@ recipesRouter.get('/search', async (req, res) => {
         (r) => !r.cookTimeMinutes || r.cookTimeMinutes <= max
       );
     }
+    const safe = [];
+    const unsafe = [];
 
-    res.json(mapped);
+    for (const r of mapped) {
+      const check = await isRecipeUnsafe(allergies, r.ingredients);
+      if (check.unsafe) unsafe.push({ ...r, unsafeReason: check.reason });
+      else safe.push(r);
+    }
+
+    res.json({ safe, unsafe });
   } catch (err) {
     console.error('Error in /recipes/search', err);
     res.status(500).send('Failed to search recipes');

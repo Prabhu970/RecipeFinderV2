@@ -22,64 +22,121 @@ export type RecipeDetail = RecipeSummary & {
 
 async function handleResponse<T = any>(res: Response): Promise<T> {
   if (!res.ok) {
-    let message = `Request failed with ${res.status}`;
+    let msg = `Request failed with ${res.status}`;
     try {
       const data = await res.json();
-      if (data?.error) message = data.error;
-    } catch {
-      // ignore
-    }
-    throw new Error(message);
+      if (data?.error) msg = data.error;
+    } catch {}
+    throw new Error(msg);
   }
   return res.json() as Promise<T>;
 }
 
 export const api = {
-  async getRecommendedRecipes(): Promise<RecipeSummary[]> {
-    const res = await fetch(`${NODE_API_URL}/recipes/recommended`);
-    return handleResponse<RecipeSummary[]>(res);
+  /** -------------------------------------------------
+   *  GET RECOMMENDED (returns safe + unsafe)
+   * -------------------------------------------------- */
+  async getRecommendedRecipes(): Promise<{
+    safe: RecipeSummary[];
+    unsafe: RecipeSummary[];
+  }> {
+    const { data: session } = await supabase.auth.getSession();
+    const userId = session?.session?.user?.id;
+
+    const res = await fetch(`${NODE_API_URL}/recipes/recommended`, {
+      headers: { "user-id": userId || "" },
+    });
+
+    return handleResponse(res);
   },
 
-  async searchRecipes(params: { q?: string; diet?: string; maxTime?: number }): Promise<RecipeSummary[]> {
+  /** -------------------------------------------------
+   *  SEARCH (Base results from Node)
+   * -------------------------------------------------- */
+  async searchRecipes(params: {
+    q?: string;
+    diet?: string;
+    maxTime?: number;
+  }): Promise<RecipeSummary[]> {
     const url = new URL(`${NODE_API_URL}/recipes/search`);
     if (params.q) url.searchParams.set("q", params.q);
     if (params.diet) url.searchParams.set("diet", params.diet);
     if (params.maxTime) url.searchParams.set("maxTime", String(params.maxTime));
-    const res = await fetch(url.toString());
-    return handleResponse<RecipeSummary[]>(res);
+
+    const res = await fetch(url);
+    return handleResponse(res);
   },
 
+  /** -------------------------------------------------
+   *  LLM Search with allergy filtering
+   * -------------------------------------------------- */
+  async searchRecipesLLM(params: {
+    query: string;
+    diet: string;
+    maxTime?: number;
+    ingredient?: string;
+    cuisine?: string;
+    mealType?: string;
+    allergies: string;
+  }) {
+    const base = await api.searchRecipes({
+      q: params.query,
+      diet: params.diet,
+      maxTime: params.maxTime,
+    });
+
+    const res = await fetch(`${PYTHON_LLM_URL}/filter-recipes-by-allergy`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ allergies: params.allergies, recipes: base }),
+    });
+
+    return handleResponse(res);
+  },
+
+  /** -------------------------------------------------
+   *  RECIPE DETAILS
+   * -------------------------------------------------- */
   async getRecipeDetail(id: string): Promise<RecipeDetail> {
     const res = await fetch(`${NODE_API_URL}/recipes/${id}`);
-    return handleResponse<RecipeDetail>(res);
+    return handleResponse(res);
   },
 
+  /** -------------------------------------------------
+   *  AI RECIPE GENERATION
+   * -------------------------------------------------- */
   async generateAIRecipe(payload: {
     title?: string;
     ingredients: string[];
     servings?: number;
     dietaryTags?: string[];
-  }): Promise<RecipeDetail> {
+  }) {
     const res = await fetch(`${PYTHON_LLM_URL}/generate-recipe`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    return handleResponse<RecipeDetail>(res);
+    return handleResponse(res);
   },
 
+  /** -------------------------------------------------
+   *  AI INGREDIENT SUBSTITUTION
+   * -------------------------------------------------- */
   async getIngredientSubstitutions(payload: {
     recipeTitle: string;
     ingredients: string[];
-  }): Promise<{ suggestions: string[] }> {
+  }) {
     const res = await fetch(`${PYTHON_LLM_URL}/ingredient-substitutions`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    return handleResponse<{ suggestions: string[] }>(res);
+    return handleResponse(res);
   },
 
+  /** -------------------------------------------------
+   *  RATINGS
+   * -------------------------------------------------- */
   async saveRating(input: {
     recipeId: string;
     rating: number;
@@ -105,9 +162,12 @@ export const api = {
     const res = await fetch(`${NODE_API_URL}/ratings/${recipeId}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    return handleResponse<any[]>(res);
+    return handleResponse(res);
   },
 
+  /** -------------------------------------------------
+   *  SHOPPING LIST
+   * -------------------------------------------------- */
   async addShoppingItems(recipeId: string, items: string[], token: string) {
     const res = await fetch(`${NODE_API_URL}/shopping-list`, {
       method: "POST",
@@ -124,7 +184,7 @@ export const api = {
     const res = await fetch(`${NODE_API_URL}/shopping-list`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    return handleResponse<any[]>(res);
+    return handleResponse(res);
   },
 
   async deleteShoppingItem(id: string, token: string) {
@@ -135,34 +195,40 @@ export const api = {
     return handleResponse(res);
   },
 
-  async getFavorites(token: string): Promise<string[]> {
+  /** -------------------------------------------------
+   *  FAVORITES
+   * -------------------------------------------------- */
+  async getFavorites(token: string) {
     const res = await fetch(`${NODE_API_URL}/favorites`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    return handleResponse<string[]>(res);
+    return handleResponse(res);
   },
 
-  async addFavorite(recipeId: string, token: string) {
-    const res = await fetch(`${NODE_API_URL}/favorites/${recipeId}`, {
+  async addFavorite(id: string, token: string) {
+    const res = await fetch(`${NODE_API_URL}/favorites/${id}`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
     });
     return handleResponse(res);
   },
 
-  async removeFavorite(recipeId: string, token: string) {
-    const res = await fetch(`${NODE_API_URL}/favorites/${recipeId}`, {
+  async removeFavorite(id: string, token: string) {
+    const res = await fetch(`${NODE_API_URL}/favorites/${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
     return handleResponse(res);
   },
 
+  /** -------------------------------------------------
+   *  PROFILE
+   * -------------------------------------------------- */
   async getProfile(token: string) {
     const res = await fetch(`${NODE_API_URL}/profile`, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    return handleResponse<any>(res);
+    return handleResponse(res);
   },
 
   async updateProfile(token: string, profile: any) {
@@ -174,20 +240,18 @@ export const api = {
       },
       body: JSON.stringify(profile),
     });
-    return handleResponse<any>(res);
+    return handleResponse(res);
   },
 
-  async uploadAvatar(file: File, userId: string): Promise<string> {
-    const filePath = `${userId}/${Date.now()}-${file.name}`;
-    const { data, error } = await supabase.storage
-      .from("avatars")
-      .upload(filePath, file);
-    if (error) {
-      throw error;
-    }
-    const { data: urlData } = supabase.storage
-      .from("avatars")
-      .getPublicUrl(filePath);
-    return urlData.publicUrl;
+  /** -------------------------------------------------
+   *  AVATAR UPLOAD
+   * -------------------------------------------------- */
+  async uploadAvatar(file: File, userId: string) {
+    const path = `${userId}/${Date.now()}-${file.name}`;
+    const { error } = await supabase.storage.from("avatars").upload(path, file);
+    if (error) throw error;
+
+    const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+    return data.publicUrl;
   },
 };

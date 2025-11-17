@@ -4,13 +4,15 @@ from google import genai
 from google.genai.types import Content
 from .schemas import GenerateRecipeRequest, RecipeDetail
 
-# Configure Gemini
+# Initialize Gemini client
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 MODEL = os.getenv("GEMINI_MODEL", "models/gemini-2.5-flash")
 
 
 def extract_json(text: str):
-    """Safely extract JSON object from LLM output."""
+    """
+    Safely extract JSON from Gemini output.
+    """
     try:
         return json.loads(text)
     except:
@@ -24,62 +26,71 @@ def extract_json(text: str):
     raise ValueError("LLM returned invalid JSON")
 
 
+# =====================================================
+#   MAIN AI RECIPE GENERATOR (used by /generate-recipe)
+# =====================================================
+
 def generate_recipe(payload: GenerateRecipeRequest) -> RecipeDetail:
-    """Generate a recipe using Gemini 2.5 Flash with new SDK."""
+    """
+    Calls Gemini 2.5 Flash to generate a structured recipe.
+    Ensures output is always valid JSON in RecipeDetail format.
+    """
 
-    ingredients = ", ".join(payload.ingredients)
-    dietary_tags = ", ".join(payload.dietary_tags or [])
+    system_instruction = """
+You are an AI recipe generator. Return ONLY strict JSON following this schema:
 
-    system = (
-        "You are a world-class chef. Always respond ONLY in JSON using the exact schema."
-    )
-
-    user_prompt = f"""
-Generate a complete recipe using **ONLY** this JSON structure:
-
-{{
+{
+  "id": "string",
   "title": "string",
-  "description": "string",
+  "imageUrl": "string",
+  "ingredients": ["ing1", "ing2", "..."],
+  "steps": ["step1", "step2", "..."],
   "servings": number,
-  "ingredients": ["item 1", "item 2"],
-  "steps": ["step 1", "step 2"],
+  "calories": number,
   "cookTimeMinutes": number,
-  "difficulty": "easy | medium | hard",
+  "difficulty": "easy" | "medium" | "hard",
   "tags": ["tag1", "tag2"]
-}}
+}
 
-INPUT DATA:
-- Preferred title: "{payload.title or ''}"
-- Ingredients: {ingredients}
-- Servings: {payload.servings}
-- Dietary tags: {dietary_tags}
-
-RULES:
-- STRICT JSON ONLY (no markdown)
-- Must include 6–12 ingredients
-- Must include 4–10 steps
-- Difficulty should match realism
+NO extra commentary. NO markdown. Only JSON.
 """
 
-    response = client.models.generate_content(
-        model=MODEL,
-        contents=[
-            Content(role="system", parts=[system]),
-            Content(role="user", parts=[user_prompt]),
-        ]
-    )
+    user_prompt = {
+        "title": payload.title or "AI generated recipe",
+        "ingredients": payload.ingredients,
+        "servings": payload.servings,
+        "dietaryTags": payload.dietaryTags or [],
+    }
 
-    raw_text = response.text  # correct new API
+    try:
+        response = client.models.generate_content(
+            model=MODEL,
+            contents=[
+                Content(role="system", parts=[system_instruction]),
+                Content(role="user", parts=[json.dumps(user_prompt)]),
+            ],
+        )
 
-    data = extract_json(raw_text)
+        raw = response.text.strip()
+        data = extract_json(raw)
 
-    return RecipeDetail(
-        title=data["title"],
-        description=data["description"],
-        servings=data["servings"],
-        ingredients=data["ingredients"],
-        steps=data["steps"],
-        cookTimeMinutes=data["cookTimeMinutes"],
-        difficulty=data["difficulty"],
-        tags=data["tags"]
-    )
+        # Ensure output matches RecipeDetail
+        return RecipeDetail(**data)
+
+    except Exception as e:
+        # Fail-open fallback recipe
+        return RecipeDetail(
+            id="llm-fallback",
+            title="AI Recipe Error",
+            imageUrl="",
+            ingredients=payload.ingredients,
+            steps=[
+                "An error occurred while generating the recipe.",
+                f"Error: {str(e)}",
+            ],
+            servings=payload.servings or 1,
+            calories=0,
+            cookTimeMinutes=0,
+            difficulty="easy",
+            tags=["error"],
+        )
