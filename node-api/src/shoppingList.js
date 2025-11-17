@@ -13,7 +13,6 @@ shoppingRouter.post("/", async (req, res) => {
   try {
     const { user_id, ingredient } = req.body;
 
-    if (!user_id) return res.status(400).json({ error: "Login Required! " });
     if (!ingredient) return res.status(400).json({ error: "Missing ingredient" });
 
     const ingredient_clean = cleanIngredient(ingredient);
