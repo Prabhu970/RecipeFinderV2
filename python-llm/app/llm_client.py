@@ -35,7 +35,7 @@ def generate_recipe(payload: GenerateRecipeRequest) -> RecipeDetail:
     )
 
     user_prompt = f"""
-Generate a complete recipe using **ONLY** this JSON structure:
+Generate a complete recipe using ONLY this JSON structure:
 
 {{
   "title": "string",
@@ -64,12 +64,12 @@ RULES:
     response = client.models.generate_content(
         model=MODEL,
         contents=[
-            Content(role="system", parts=[system]),
-            Content(role="user", parts=[user_prompt]),
+            Content(role="system", parts=[{"text": system}]),
+            Content(role="user", parts=[{"text": user_prompt}]),
         ]
     )
 
-    raw_text = response.text  # correct new API
+    raw_text = response.text
 
     data = extract_json(raw_text)
 
