@@ -53,14 +53,14 @@ async def ingredient_substitutions(payload: dict):
     title = payload.get("recipeTitle", "")
     ingredients = payload.get("ingredients", [])
 
-    system_msg = "You are a culinary expert. Provide useful ingredient substitutions in strict JSON."
+    system = (
+        "You are a culinary expert. Provide useful ingredient substitutions in strict JSON."
+    )
 
-    user_prompt = f"""
+    prompt = f"""
 Return only JSON:
 
-{{
-  "suggestions": ["sub1", "sub2", "sub3"]
-}}
+{{ "suggestions": ["sub1", "sub2", "sub3"] }}
 
 Recipe: {title}
 Ingredients: {", ".join(ingredients)}
@@ -70,8 +70,8 @@ Ingredients: {", ".join(ingredients)}
         response = client.models.generate_content(
             model=MODEL,
             contents=[
-                Content(role="system", parts=[{"text": system_msg}]),
-                Content(role="user", parts=[{"text": user_prompt}]),
+                Content(role="system", parts=[system]),
+                Content(role="user", parts=[prompt]),
             ]
         )
 
@@ -80,7 +80,4 @@ Ingredients: {", ".join(ingredients)}
         return data
 
     except Exception as e:
-        return {
-            "suggestions": [f"Error from AI service: {str(e)}"]
-        }
-
+        return {"suggestions": [f"Error from AI service: {str(e)}"]}
