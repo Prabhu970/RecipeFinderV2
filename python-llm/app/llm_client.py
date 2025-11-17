@@ -1,81 +1,85 @@
 import os
-import uuid
+import json
+from google import genai
+from google.genai.types import Content
 from .schemas import GenerateRecipeRequest, RecipeDetail
-import google.generativeai as genai
 
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-api_key = os.getenv("GEMINI_API_KEY")
-
-if api_key:
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel(GEMINI_MODEL)
-else:
-    model = None
+# Configure Gemini
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+MODEL = os.getenv("GEMINI_MODEL", "models/gemini-2.5-flash")
 
 
-def _fallback_recipe(req: GenerateRecipeRequest) -> RecipeDetail:
-    steps = [
-        "Read through all ingredients and preheat any oven or pan if needed.",
-        "Wash, chop and measure all ingredients.",
-        "Cook ingredients in a sensible order until done.",
-        "Taste and adjust seasoning with salt, pepper and herbs.",
-        "Plate, garnish and serve."
-    ]
-    return RecipeDetail(
-        id=str(uuid.uuid4()),
-        title=req.title or "AI generated recipe",
-        ingredients=req.ingredients,
-        steps=steps,
-        servings=req.servings or 2,
-        calories=None,
-        cook_time_minutes=30,
-        difficulty="easy",
-        rating=4.5,
-        tags=req.dietary_tags or [],
-        image_url=None,
-    )
-
-
-def generate_recipe(req: GenerateRecipeRequest) -> RecipeDetail:
-    if not model:
-        return _fallback_recipe(req)
-
-    prompt = (
-        "You are an expert home cook. Generate one detailed recipe as JSON with keys: "
-        "title, ingredients (list of strings), steps (list of strings), servings (int), "
-        "cook_time_minutes (int), difficulty ('easy'|'medium'|'hard'), rating (float 1-5), "
-        "tags (list of short strings), optional image_url (string). "
-        f"Use these ingredients as the base: {req.ingredients}. "
-    )
-    if req.title:
-        prompt += f"Match this vibe: {req.title}. "
-    if req.dietary_tags:
-        prompt += f"Respect these dietary tags: {req.dietary_tags}. "
-    if req.servings:
-        prompt += f"Target servings: {req.servings}. "
-
+def extract_json(text: str):
+    """Safely extract JSON object from LLM output."""
     try:
-        response = model.generate_content(prompt)
-        text = response.text or ""
-        import json
-        import re
+        return json.loads(text)
+    except:
+        pass
 
-        match = re.search(r"\{[\s\S]*\}", text)
-        if not match:
-            return _fallback_recipe(req)
-        data = json.loads(match.group(0))
-        return RecipeDetail(
-            id=str(uuid.uuid4()),
-            title=data.get("title") or req.title or "AI generated recipe",
-            ingredients=data.get("ingredients") or req.ingredients,
-            steps=data.get("steps") or _fallback_recipe(req).steps,
-            servings=data.get("servings") or req.servings or 2,
-            calories=data.get("calories"),
-            cook_time_minutes=data.get("cook_time_minutes"),
-            difficulty=data.get("difficulty") or "easy",
-            rating=data.get("rating") or 4.5,
-            tags=data.get("tags") or req.dietary_tags or [],
-            image_url=data.get("image_url"),
-        )
-    except Exception:
-        return _fallback_recipe(req)
+    import re
+    match = re.search(r"\{[\s\S]*\}", text)
+    if match:
+        return json.loads(match.group(0))
+
+    raise ValueError("LLM returned invalid JSON")
+
+
+def generate_recipe(payload: GenerateRecipeRequest) -> RecipeDetail:
+    """Generate a recipe using Gemini 2.5 Flash with new SDK."""
+
+    ingredients = ", ".join(payload.ingredients)
+    dietary_tags = ", ".join(payload.dietary_tags or [])
+
+    system = (
+        "You are a world-class chef. Always respond ONLY in JSON using the exact schema."
+    )
+
+    user_prompt = f"""
+Generate a complete recipe using **ONLY** this JSON structure:
+
+{{
+  "title": "string",
+  "description": "string",
+  "servings": number,
+  "ingredients": ["item 1", "item 2"],
+  "steps": ["step 1", "step 2"],
+  "cookTimeMinutes": number,
+  "difficulty": "easy | medium | hard",
+  "tags": ["tag1", "tag2"]
+}}
+
+INPUT DATA:
+- Preferred title: "{payload.title or ''}"
+- Ingredients: {ingredients}
+- Servings: {payload.servings}
+- Dietary tags: {dietary_tags}
+
+RULES:
+- STRICT JSON ONLY (no markdown)
+- Must include 6–12 ingredients
+- Must include 4–10 steps
+- Difficulty should match realism
+"""
+
+    response = client.models.generate_content(
+        model=MODEL,
+        contents=[
+            Content(role="system", parts=[system]),
+            Content(role="user", parts=[user_prompt]),
+        ]
+    )
+
+    raw_text = response.text  # correct new API
+
+    data = extract_json(raw_text)
+
+    return RecipeDetail(
+        title=data["title"],
+        description=data["description"],
+        servings=data["servings"],
+        ingredients=data["ingredients"],
+        steps=data["steps"],
+        cookTimeMinutes=data["cookTimeMinutes"],
+        difficulty=data["difficulty"],
+        tags=data["tags"]
+    )
