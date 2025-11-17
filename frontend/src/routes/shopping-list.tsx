@@ -8,7 +8,7 @@ export function ShoppingListRoute() {
   const queryClient = useQueryClient();
 
   const listQuery = useQuery({
-    queryKey: ['shopping-list'],
+    queryKey: ['shopping_list'],
     queryFn: async () => {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
@@ -24,7 +24,7 @@ export function ShoppingListRoute() {
       if (!token) throw new Error('Not signed in');
       return api.deleteShoppingItem(id, token);
     },
-    onSuccess: () => queryClient.invalidateQueries(['shopping-list'])
+    onSuccess: () => queryClient.invalidateQueries(['shopping_list'])
   });
 
   if (listQuery.isLoading) {
@@ -68,7 +68,7 @@ export function ShoppingListRoute() {
                 padding: '0.4rem 0'
               }}
             >
-              <span>{item.item}</span>
+              <span>{item.ingredient}</span>
               <button
                 type="button"
                 className="btn btn-ghost btn-sm"
