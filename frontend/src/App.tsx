@@ -86,8 +86,8 @@ export default function App() {
       </header>
 
       {/* MAIN CONTENT */}
-      <main className="app-main">
-        <div className="app-main-inner">
+      <main className="app-main w-full">
+        <div className="w-full max-w-full px-4 md:px-6 lg:px-8">
           <Routes>
             {/* Public */}
             <Route path="/login" element={<LoginForm />} />
