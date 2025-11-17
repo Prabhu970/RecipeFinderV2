@@ -116,6 +116,7 @@ export default function LoginForm() {
                   marginBottom: "0.3rem",
                 }}
               >
+                <label style={{ fontSize: "0.9rem" }}>Password</label>
                <span
                   style={{ fontSize: "0.85rem", color: "#4ea1ff", cursor: "pointer" }}
                 >
@@ -124,7 +125,7 @@ export default function LoginForm() {
                 
               </div>
 
-               <label style={{ fontSize: "0.9rem" }}>Password</label>
+               
                 <Input
                 type="password"
                 placeholder="Enter your password"
