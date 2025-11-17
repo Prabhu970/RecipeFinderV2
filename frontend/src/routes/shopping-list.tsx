@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 
-export default function ShoppingListRoute() {
+export function ShoppingListRoute() {
   const [list, setList] = useState<any[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
 
