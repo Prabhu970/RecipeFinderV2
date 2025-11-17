@@ -146,12 +146,19 @@ export default function LoginForm() {
               gap: "0.5rem",
             }}
           >
+            
             <div style={{ flexGrow: 1, height: "1px", background: "rgba(255,255,255,0.2)" }} />
             <span style={{ fontSize: "0.8rem", opacity: 0.7 }}>Or continue with</span>
             <div style={{ flexGrow: 1, height: "1px", background: "rgba(255,255,255,0.2)" }} />
           </div>
 
-          
+          <p
+            style={{
+              textAlign: "center",
+              marginTop: "1.5rem",
+              opacity: 0.85,
+            }}
+          >
             Don’t have an account?{" "}
             <Link to="/signup" style={{ color: "#4ea1ff" }}>
               Sign up
