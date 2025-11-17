@@ -1,4 +1,4 @@
-import express from 'express';
+import express from "express";
 import { supabaseAdmin } from "./supabaseClient.js";
 import fetch from "node-fetch";
 
@@ -6,17 +6,20 @@ export const recipesRouter = express.Router();
 
 const PY_URL = process.env.PYTHON_LLM_URL;
 
-// Safety check
+// Check once on server start
 if (!PY_URL) {
-  console.error("❌ PYTHON_LLM_URL is NOT SET! Python LLM calls will FAIL.");
+  console.error("❌ ERROR: PYTHON_LLM_URL is NOT SET in Render environment!");
+} else {
+  console.log("🔗 Python LLM URL:", PY_URL);
 }
 
-// ---------------------------
-// Helper functions
-// ---------------------------
+/* ------------------------------------------------------------------ */
+/* Helpers */
+/* ------------------------------------------------------------------ */
+
 function mapTags(row) {
   return (row.recipe_tags ?? [])
-    .map(rt => rt.tags?.name)
+    .map((rt) => rt.tags?.name)
     .filter(Boolean);
 }
 
@@ -34,12 +37,14 @@ function mapRecipeSummary(row) {
 
 function mapRecipeDetail(row) {
   const tags = mapTags(row);
-  const ingredients = (row.ingredients ?? []).map(i =>
+
+  const ingredients = (row.ingredients ?? []).map((i) =>
     i.quantity ? `${i.quantity} ${i.name}` : i.name
   );
+
   const steps = (row.steps ?? [])
     .sort((a, b) => (a.step_number ?? 0) - (b.step_number ?? 0))
-    .map(s => s.instruction);
+    .map((s) => s.instruction);
 
   return {
     id: row.id,
@@ -55,16 +60,16 @@ function mapRecipeDetail(row) {
   };
 }
 
-// ---------------------------
-// GET /recipes/recommended
-// ---------------------------
-recipesRouter.get("/recommended", async (req, res) => {
+/* ------------------------------------------------------------------ */
+/* GET /recipes/recommended */
+/* ------------------------------------------------------------------ */
 
-  const userId = req.headers["user-id"] || null;
+recipesRouter.get("/recommended", async (req, res) => {
+  const userId = req.headers["user-id"];
 
   try {
-    // 1) Load all recipes
-    const { data: recipes, error } = await supabaseAdmin
+    // 1️⃣ Load all recipes
+    const { data: recipes, error: recipeError } = await supabaseAdmin
       .from("recipes")
       .select(`
         id,
@@ -77,30 +82,118 @@ recipesRouter.get("/recommended", async (req, res) => {
         recipe_tags ( tags ( name ) )
       `);
 
-    if (error) throw error;
+    if (recipeError) throw recipeError;
 
-    // 2) Load user profile
+    // 2️⃣ Load user allergies
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("allergies")
       .eq("id", userId)
       .single();
 
-    const allergies = profile?.allergies || "";
+    const allergies = profile?.allergies ?? "";
 
-    // 3) Call Python correctly
-    const py = await fetch(`${PY_URL}/filter-recipes-by-allergy`, {
+    // 3️⃣ Send recipes + allergies to Python LLM
+    const pyRes = await fetch(`${PY_URL}/filter-recipes-by-allergy`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ allergies, recipes }),
     });
 
-    const result = await py.json();
-    return res.json(result);
+    const result = await pyRes.json();
 
+    return res.json(result);
   } catch (err) {
-    console.error("ERROR /recipes/recommended:", err.message);
+    console.error("❌ ERROR /recipes/recommended:", err);
     return res.status(500).json({ error: "Failed to load recommended recipes" });
   }
 });
 
+/* ------------------------------------------------------------------ */
+/* GET /recipes/search */
+/* ------------------------------------------------------------------ */
+
+recipesRouter.get("/search", async (req, res) => {
+  const { q, diet, maxTime } = req.query;
+
+  try {
+    let query = supabaseAdmin
+      .from("recipes")
+      .select(`
+        id,
+        title,
+        description,
+        image_url,
+        cook_time_minutes,
+        difficulty,
+        rating,
+        calories,
+        recipe_tags ( tags ( name ) )
+      `);
+
+    if (q) query = query.ilike("title", `%${q}%`);
+
+    // Run base DB search
+    const { data, error } = await query.limit(120);
+    if (error) throw error;
+
+    let recipes = (data ?? []).map(mapRecipeSummary);
+
+    // Diet filter
+    if (diet) {
+      const d = diet.toLowerCase();
+      recipes = recipes.filter((r) =>
+        (r.tags ?? []).some((t) => t.toLowerCase() === d)
+      );
+    }
+
+    // Max time filter
+    if (maxTime) {
+      const max = Number(maxTime);
+      recipes = recipes.filter(
+        (r) => !r.cookTimeMinutes || r.cookTimeMinutes <= max
+      );
+    }
+
+    return res.json(recipes);
+  } catch (err) {
+    console.error("❌ ERROR /recipes/search:", err);
+    return res.status(500).json({ error: "Failed to search recipes" });
+  }
+});
+
+/* ------------------------------------------------------------------ */
+/* GET /recipes/:id */
+/* ------------------------------------------------------------------ */
+
+recipesRouter.get("/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("recipes")
+      .select(`
+        id,
+        title,
+        description,
+        image_url,
+        cook_time_minutes,
+        difficulty,
+        rating,
+        calories,
+        ingredients ( name, quantity ),
+        steps ( step_number, instruction ),
+        recipe_tags ( tags ( name ) )
+      `)
+      .eq("id", id)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: "Recipe not found" });
+
+    return res.json(mapRecipeDetail(data));
+  } catch (err) {
+    console.error("❌ ERROR /recipes/:id:", err);
+    return res.status(500).json({ error: "Failed to load recipe" });
+  }
+});
