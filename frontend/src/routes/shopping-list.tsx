@@ -1,85 +1,79 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '../lib/api';
-import { supabase } from '../lib/supabaseClient';
-import { LoadingSpinner } from '../components/common/LoadingSpinner';
-import { EmptyState } from '../components/common/EmptyState';
+import { useState, useEffect } from "react";
+import { supabase } from "../lib/supabaseClient";
 
-export function ShoppingListRoute() {
-  const queryClient = useQueryClient();
+export default function ShoppingList() {
+  const [list, setList] = useState<any[]>([]);
 
-  const listQuery = useQuery({
-    queryKey: ['shopping_list'],
-    queryFn: async () => {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (!token) throw new Error('Not signed in');
-      return api.getShoppingList(token);
-    }
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
-      if (!token) throw new Error('Not signed in');
-      return api.deleteShoppingItem(id, token);
-    },
-    onSuccess: () => queryClient.invalidateQueries(['shopping_list'])
-  });
-
-  if (listQuery.isLoading) {
-    return <LoadingSpinner label="Loading your shopping list..." />;
+  async function loadList() {
+    const { data } = await supabase
+      .from("shopping_list")
+      .select("*")
+      .eq("user_id", supabase.auth.user()?.id);
+    setList(data || []);
   }
 
-  if (listQuery.isError) {
-    return (
-      <EmptyState
-        title="Sign in required"
-        description="Sign in to sync your shopping list across devices."
-      />
-    );
+  async function updateQty(id: string, delta: number) {
+    const item = list.find((i) => i.id === id);
+    if (!item) return;
+
+    const newQty = Math.max(1, item.total_qty + delta);
+
+    await supabase
+      .from("shopping_list")
+      .update({ total_qty: newQty })
+      .eq("id", id);
+
+    loadList();
   }
 
-  const items = listQuery.data ?? [];
+  async function removeItem(id: string) {
+    await supabase.from("shopping_list").delete().eq("id", id);
+    loadList();
+  }
+
+  useEffect(() => {
+    loadList();
+  }, []);
 
   return (
-    <section className="stack">
-      <div className="page-header">
-        <h1 className="page-title">Shopping list</h1>
-        <p className="page-subtitle">
-          Ingredients you&apos;ve added from recipes appear here, synced via Supabase.
-        </p>
-      </div>
+    <div className="container mx-auto py-10">
+      <h1 className="text-4xl font-bold mb-6">Shopping List</h1>
 
-      {items.length === 0 ? (
-        <EmptyState
-          title="Your list is empty"
-          description="Open any recipe and use “Add ingredients” to start building your list."
-        />
-      ) : (
-        <ul className="stack">
-          {items.map((item: any) => (
-            <li
-              key={item.id}
-              className="flex-row"
-              style={{
-                justifyContent: 'space-between',
-                borderBottom: '1px solid rgba(31,41,55,1)',
-                padding: '0.4rem 0'
-              }}
+      {list.map((item) => (
+        <div
+          key={item.id}
+          className="flex justify-between items-center py-3 border-b border-gray-700"
+        >
+          <span className="capitalize text-lg">{item.ingredient_clean}</span>
+
+          <div className="flex items-center gap-4">
+            <button
+              className="px-3 py-1 bg-gray-700 rounded"
+              onClick={() => updateQty(item.id, -1)}
             >
-              <span>{item.ingredient}</span>
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
-                onClick={() => deleteMutation.mutate(item.id)}
-              >
-                Remove
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+              -
+            </button>
+
+            <span className="text-xl font-semibold w-6 text-center">
+              {item.total_qty}
+            </span>
+
+            <button
+              className="px-3 py-1 bg-gray-700 rounded"
+              onClick={() => updateQty(item.id, +1)}
+            >
+              +
+            </button>
+
+            <button
+              className="px-4 py-1 bg-red-500 rounded"
+              onClick={() => removeItem(item.id)}
+            >
+              Remove
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
