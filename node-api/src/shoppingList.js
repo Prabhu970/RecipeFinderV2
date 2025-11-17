@@ -1,63 +1,79 @@
 import express from "express";
 import { supabaseAdmin } from "./supabaseClient.js";
-import { requireUser } from "./auth.js";
+import { cleanIngredient } from "./utils/cleanIngredient.js";
 
 export const shoppingRouter = express.Router();
 
-shoppingRouter.use(requireUser);
-
-/**
- * GET /shopping-list
- */
-shoppingRouter.get("/", async (req, res) => {
+// ADD INGREDIENT — WITH MERGING
+shoppingRouter.post("/add", async (req, res) => {
   try {
-    const userId = req.user.id;
-    const { data, error } = await supabaseAdmin
+    const { user_id, ingredient, quantity } = req.body;
+
+    if (!user_id || !ingredient)
+      return res.status(400).json({ error: "Missing user_id or ingredient" });
+
+    const cleanedName = cleanIngredient(ingredient);
+
+    // check if this ingredient already exists for this user
+    const { data: existing } = await supabaseAdmin
       .from("shopping_list")
       .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: true });
+      .eq("user_id", user_id)
+      .eq("ingredient_clean", cleanedName)
+      .maybeSingle();
+
+    // If already exists → increment quantity
+    if (existing) {
+      const newQty = (existing.total_qty ?? 1) + (quantity ?? 1);
+
+      await supabaseAdmin
+        .from("shopping_list")
+        .update({ total_qty: newQty })
+        .eq("id", existing.id);
+
+      return res.json({ merged: true, id: existing.id, qty: newQty });
+    }
+
+    // Insert new ingredient
+    const { data, error } = await supabaseAdmin
+      .from("shopping_list")
+      .insert([
+        {
+          user_id,
+          ingredient: ingredient,
+          ingredient_clean: cleanedName,
+          total_qty: quantity ?? 1,
+        },
+      ])
+      .select()
+      .single();
 
     if (error) throw error;
 
     res.json(data);
   } catch (err) {
-    console.error("Failed to fetch shopping list:", err);
-    res.status(500).json({ error: "Shopping list fetch failed" });
+    console.error("Error adding:", err);
+    res.status(500).json({ error: "Could not add ingredient" });
   }
 });
 
-/**
- * POST /shopping-list
- * Body: { recipeId, items[] }
- */
-shoppingRouter.post("/", async (req, res) => {
+// GET SHOPPING LIST (clean names only)
+shoppingRouter.get("/:user_id", async (req, res) => {
   try {
-    const userId = req.user.id;
-    const { recipeId, items } = req.body;
-
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return res.status(400).json({ error: "items[] is required" });
-    }
-
-    const rows = items.map((item) => ({
-      ingredient:item,
-      quantity: item.quantity || null,
-      checked: false,
-      user_id: userId,
-    }));
+    const { user_id } = req.params;
 
     const { data, error } = await supabaseAdmin
       .from("shopping_list")
-      .insert(rows)
-      .select();
+      .select("id, ingredient_clean, total_qty")
+      .eq("user_id", user_id)
+      .order("ingredient_clean", { ascending: true });
 
     if (error) throw error;
 
-    res.json({ success: true, added: data });
+    res.json(data);
   } catch (err) {
-    console.error("Failed to add shopping items:", err);
-    res.status(500).json({ error: "Could not add items" });
+    console.error("Error fetching shopping list:", err);
+    res.status(500).json({ error: "Could not fetch shopping list" });
   }
 });
 
