@@ -19,7 +19,7 @@ app.add_middleware(
 
 # Use the same env var name as the README + llm_client
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.0-pro-latest")
 
 substitution_model = None
 if GEMINI_API_KEY:
