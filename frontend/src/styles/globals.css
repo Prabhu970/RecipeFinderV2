@@ -46,7 +46,7 @@ body.app-body {
 }
 
 .app-header-inner {
-  width: 95%;
+  width: 100%;
   margin: 0 auto;
   padding: 0.75rem 1.1rem;
   display: flex;
@@ -116,10 +116,10 @@ body.app-body {
 }
 
 .app-main-inner {
-  width:95%;
+  width:100%;
   max-width: 100%;
   margin: 0 auto;
-  padding: 1.1rem 1.5rem 2rem 1.5rem;
+  padding: 1.1rem 1.1rem 2rem;
 }
 
 .app-footer {
