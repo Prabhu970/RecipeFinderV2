@@ -124,7 +124,6 @@ export default function LoginForm() {
                 </span>
                 
               </div>
-
                
                 <Input
                 type="password"
@@ -132,6 +131,7 @@ export default function LoginForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                style={{ marginTop: "0.3rem", marginLeft: "0.3rem" }}
               />
 
               
