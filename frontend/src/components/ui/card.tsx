@@ -11,7 +11,11 @@ export function Card({
       className={cn(
         "rounded-xl border border-white/15 bg-neutral-900 text-white shadow-md",
         className
-      )}
+      )
+    style={{
+        border: "1px solid rgba(255,255,255,0.18)", // ← HARD BORDER (cannot be overridden)
+      }}
+    }
       {...props}
     >
       {children}
