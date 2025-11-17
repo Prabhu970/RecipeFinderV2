@@ -3,7 +3,7 @@ import uuid
 from .schemas import GenerateRecipeRequest, RecipeDetail
 import google.generativeai as genai
 
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.0-pro-latest")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.0-flash")
 api_key = os.getenv("GEMINI_API_KEY")
 
 if api_key:
