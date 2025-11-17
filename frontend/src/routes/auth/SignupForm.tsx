@@ -5,7 +5,7 @@ import { Card, CardBody } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 
-export default function SignupForm() {
+export function SignupForm() {
   const navigate = useNavigate();
 
   const [fullName, setFullName] = useState("");
