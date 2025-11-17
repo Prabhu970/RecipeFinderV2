@@ -1,15 +1,28 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 
-export function ShoppingListRoute() {
+export default function ShoppingListRoute() {
   const [list, setList] = useState<any[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  // Load user first
+  useEffect(() => {
+    async function loadUser() {
+      const { data } = await supabase.auth.getSession();
+      setUserId(data.session?.user?.id ?? null);
+    }
+    loadUser();
+  }, []);
 
   async function loadList() {
-    const { data } = await supabase
+    if (!userId) return;
+
+    const { data, error } = await supabase
       .from("shopping_list")
       .select("*")
-      .eq("user_id", supabase.auth.user()?.id);
-    setList(data || []);
+      .eq("user_id", userId);
+
+    if (!error) setList(data || []);
   }
 
   async function updateQty(id: string, delta: number) {
@@ -33,7 +46,7 @@ export function ShoppingListRoute() {
 
   useEffect(() => {
     loadList();
-  }, []);
+  }, [userId]);
 
   return (
     <div className="container mx-auto py-10">
