@@ -99,20 +99,22 @@ export function SignupForm() {
           <form onSubmit={handleSignup} style={{ display: "grid", gap: "1rem" }}>
             {/* FULL NAME */}
             <div>
-              <label style={{ fontSize: "0.9rem" }}>Full name</label>
-              <Input
+              <label style={{ fontSize: "0.9rem" }}>Full name</label>              
+            </div>
+            <Input
                 placeholder="John Doe"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 required
                 style={{ marginTop: "0.3rem", marginLeft: "0.3rem" }}
               />
-            </div>
 
             {/* EMAIL */}
             <div>
               <label style={{ fontSize: "0.9rem" }}>Email</label>
-              <Input
+              
+            </div>
+            <Input
                 type="email"
                 placeholder="name@example.com"
                 value={email}
@@ -120,12 +122,13 @@ export function SignupForm() {
                 required
                 style={{ marginTop: "0.3rem", marginLeft: "0.3rem" }}
               />
-            </div>
 
             {/* PASSWORD */}
             <div>
               <label style={{ fontSize: "0.9rem" }}>Password</label>
-              <Input
+              
+            </div>
+            <Input
                 type="password"
                 placeholder="Create a password"
                 value={password}
@@ -133,7 +136,6 @@ export function SignupForm() {
                 required
                 style={{ marginTop: "0.3rem", marginLeft: "0.3rem" }}
               />
-            </div>
 
             {/* SMALLER SIGN UP BUTTON */}
             <div style={{ display: "flex", justifyContent: "center" }}>
