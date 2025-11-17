@@ -5,9 +5,7 @@ import { LoadingSpinner } from "../components/common/LoadingSpinner";
 import { ErrorState } from "../components/common/ErrorState";
 
 export function HomeRoute() {
-  const [safeRecipes, setSafeRecipes] = useState([]);
-  const [unsafeRecipes, setUnsafeRecipes] = useState([]);
-  const [showUnsafe, setShowUnsafe] = useState(false);
+  const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -17,10 +15,9 @@ export function HomeRoute() {
         setLoading(true);
         setError("");
 
-        const { safe, unsafe } = await api.getRecommendedRecipes();
-
-        setSafeRecipes(safe || []);
-        setUnsafeRecipes(unsafe || []);
+        // Now returns: RecipeSummary[]
+        const list = await api.getRecommendedRecipes();
+        setRecipes(list || []);
       } catch (err) {
         console.error(err);
         setError("Failed to load recommended recipes");
@@ -37,40 +34,26 @@ export function HomeRoute() {
   }
 
   if (error) {
-    return <ErrorState message={error} onRetry={() => window.location.reload()} />;
+    return (
+      <ErrorState
+        message={error}
+        onRetry={() => window.location.reload()}
+      />
+    );
   }
 
   return (
+    <div className="page-container">
     <section className="stack">
       <div className="page-header">
         <h1 className="page-title">Recommended for you</h1>
         <p className="page-subtitle">
-          Curated recipes powered by Supabase, your allergies, and Gemini 2.5 Flash.
+          Curated recipes powered by Supabase and your preferences.
         </p>
       </div>
 
-      {/* SAFE RECIPES */}
-      <RecipeGrid recipes={safeRecipes} />
-
-      {/* UNSAFE — COLLAPSIBLE */}
-      {unsafeRecipes.length > 0 && (
-        <div style={{ marginTop: "2rem" }}>
-          <button
-            className="btn btn-secondary"
-            onClick={() => setShowUnsafe(!showUnsafe)}
-          >
-            {showUnsafe
-              ? "Hide recipes filtered due to your allergies"
-              : `Show ${unsafeRecipes.length} filtered recipes (unsafe for you)`}
-          </button>
-
-          {showUnsafe && (
-            <div style={{ marginTop: "1rem", opacity: 0.7 }}>
-              <RecipeGrid recipes={unsafeRecipes} />
-            </div>
-          )}
-        </div>
-      )}
+      <RecipeGrid recipes={recipes} />
     </section>
+    </div>
   );
 }
