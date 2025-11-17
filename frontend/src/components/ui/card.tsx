@@ -1,6 +1,3 @@
-
-
-
 import * as React from "react";
 
 import { cn } from "./utils";
@@ -16,10 +13,6 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
       {...props}
     />
   );
-}
-
-export function CardBody({ children }: { children: ReactNode }) {
-  return <div className="card-body">{children}</div>;
 }
 
 function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
