@@ -137,21 +137,6 @@ export default function LoginForm() {
             </Button>
           </form>
 
-          {/* DIVIDER */}
-          <div
-            style={{
-              margin: "1.5rem 0",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-            }}
-          >
-            
-            <div style={{ flexGrow: 1, height: "1px", background: "rgba(255,255,255,0.2)" }} />
-            <span style={{ fontSize: "0.8rem", opacity: 0.7 }}>Or continue with</span>
-            <div style={{ flexGrow: 1, height: "1px", background: "rgba(255,255,255,0.2)" }} />
-          </div>
-
           <p
             style={{
               textAlign: "center",
