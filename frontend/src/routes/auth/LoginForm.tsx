@@ -133,6 +133,13 @@ export default function LoginForm() {
                 required
                 style={{ marginTop: "0.3rem", marginLeft: "0.3rem" }}
               />
+              <div
+              style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  marginBottom: "0.3rem",
+                }}
+              ></div>
 
               
               
