@@ -5,24 +5,23 @@ from fastapi.middleware.cors import CORSMiddleware
 from google import genai
 from google.genai.types import Content
 from .schemas import GenerateRecipeRequest, RecipeDetail
+
+from .schemas import GenerateRecipeRequest, RecipeDetail
 from .llm_client import generate_recipe as generate_recipe_llm
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://recipe-finder-v2-b8be-cpb2w4ejg.vercel.app",
-        "http://localhost:3000",
-    ],
+    allow_origins=["*"],  # you can restrict this to your Vercel origin later
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Use the same env var name as the README + llm_client
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 MODEL = os.getenv("GEMINI_MODEL", "models/gemini-2.5-flash")
-
 
 def extract_json(text: str):
     """Safely extract JSON object from LLM output."""
@@ -41,6 +40,11 @@ def extract_json(text: str):
 
 @app.post("/generate-recipe", response_model=RecipeDetail)
 async def generate_recipe_endpoint(payload: GenerateRecipeRequest) -> RecipeDetail:
+    """
+    Main AI recipe generator endpoint used by:
+      - frontend (PYTHON_LLM_URL/generate-recipe)
+      - node-api/src/pythonClient.js
+    """
     return generate_recipe_llm(payload)
 
 
@@ -66,8 +70,8 @@ Ingredients: {", ".join(ingredients)}
         response = client.models.generate_content(
             model=MODEL,
             contents=[
-                Content(role="system", parts=[{"text": system}]),
-                Content(role="user", parts=[{"text": prompt}]),
+                Content(role="system", parts=[system]),
+                Content(role="user", parts=[prompt]),
             ]
         )
 
