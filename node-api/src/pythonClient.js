@@ -3,19 +3,6 @@ import fetch from 'node-fetch';
 
 const baseUrl = process.env.PYTHON_LLM_URL ?? 'http://localhost:8000';
 
-export async function filterRecipesByAllergy(payload) {
-  const res = await fetch(`${baseUrl}/filter-recipes-by-allergy`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-
-  if (!res.ok) {
-    throw new Error(`AI allergy filter failed: ${res.status}`);
-  }
-  return res.json(); // { safe: RecipeSummary[], unsafe: RecipeSummary[] }
-}
-
 export async function generateAIRecipe(payload) {
   const res = await fetch(`${baseUrl}/generate-recipe`, {
     method: 'POST',

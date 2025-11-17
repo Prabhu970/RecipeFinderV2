@@ -13,11 +13,8 @@ export function HomeRoute() {
     async function load() {
       try {
         setLoading(true);
-        setError("");
-
-        // Now returns: RecipeSummary[]
-        const list = await api.getRecommendedRecipes();
-        setRecipes(list || []);
+        const result = await api.getRecommendedRecipes();
+        setRecipes(result || []);
       } catch (err) {
         console.error(err);
         setError("Failed to load recommended recipes");
@@ -34,26 +31,19 @@ export function HomeRoute() {
   }
 
   if (error) {
-    return (
-      <ErrorState
-        message={error}
-        onRetry={() => window.location.reload()}
-      />
-    );
+    return <ErrorState message={error} onRetry={() => window.location.reload()} />;
   }
 
   return (
-    <div className="page-container">
     <section className="stack">
       <div className="page-header">
         <h1 className="page-title">Recommended for you</h1>
         <p className="page-subtitle">
-          Curated recipes powered by Supabase and your preferences.
+          Curated recipes powered by Supabase and AI Chef.
         </p>
       </div>
 
       <RecipeGrid recipes={recipes} />
     </section>
-    </div>
   );
 }
