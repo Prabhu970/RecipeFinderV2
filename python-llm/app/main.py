@@ -53,14 +53,17 @@ async def ingredient_substitutions(payload: dict):
     title = payload.get("recipeTitle", "")
     ingredients = payload.get("ingredients", [])
 
-    system = (
-        "You are a culinary expert. Provide useful ingredient substitutions in strict JSON."
+    system_msg = (
+        "You are a culinary expert. Always reply using STRICT JSON only. "
+        "No natural language. No explanations. No markdown."
     )
 
-    prompt = f"""
-Return only JSON:
+    user_msg = f"""
+Return JSON ONLY:
 
-{{ "suggestions": ["sub1", "sub2", "sub3"] }}
+{{
+  "suggestions": ["sub1", "sub2", "sub3"]
+}}
 
 Recipe: {title}
 Ingredients: {", ".join(ingredients)}
@@ -70,14 +73,18 @@ Ingredients: {", ".join(ingredients)}
         response = client.models.generate_content(
             model=MODEL,
             contents=[
-                Content(role="system", parts=[system]),
-                Content(role="user", parts=[prompt]),
-            ]
+                # Gemini 2.5 uses role="user" for BOTH system & user context
+                Content(role="user", parts=[{"text": system_msg}]),
+                Content(role="user", parts=[{"text": user_msg}]),
+            ],
         )
 
         raw = response.text
-        data = extract_json(raw)
-        return data
+        print("RAW LLM OUTPUT:", raw)
+
+        return extract_json(raw)
 
     except Exception as e:
-        return {"suggestions": [f"Error from AI service: {str(e)}"]}
+        return {
+            "suggestions": [f"Error from AI service: {str(e)}"]
+        }
