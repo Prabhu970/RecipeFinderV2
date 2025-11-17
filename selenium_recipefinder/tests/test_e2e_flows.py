@@ -7,8 +7,8 @@ from selenium.webdriver.support import expected_conditions as EC
 # - at least one existing user account for login flows
 # Update the credentials and any text selectors to match your environment.
 
-TEST_USER_EMAIL = "testuser@example.com"
-TEST_USER_PASSWORD = "Password123!"
+TEST_USER_EMAIL = "prabhas@gmail.com"
+TEST_USER_PASSWORD = "Pr@BHU@940344"
 
 
 def test_e2e_001_signup_profile_search_view_recipe(driver, wait, base_url):
