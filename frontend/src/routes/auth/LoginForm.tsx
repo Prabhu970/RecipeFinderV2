@@ -116,11 +116,7 @@ export default function LoginForm() {
                 }}
               >
                 <label style={{ fontSize: "0.9rem" }}>Password</label>
-                <span
-                  style={{ fontSize: "0.85rem", color: "#4ea1ff", cursor: "pointer" }}
-                >
-                  Forgot?
-                </span>
+                
               </div>
 
               <Input
@@ -130,7 +126,13 @@ export default function LoginForm() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
+              <span
+                  style={{ fontSize: "0.85rem", color: "#4ea1ff", cursor: "pointer" }}
+                >
+                  Forgot?
+                </span>
             </div>
+
 
             <Button type="submit" disabled={loading}>
               {loading ? "Signing in..." : "Sign In"}
