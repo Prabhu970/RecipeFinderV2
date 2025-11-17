@@ -69,7 +69,7 @@ async function isRecipeUnsafe(allergies, ingredients) {
 
 
 // ---- GET /recipes/recommended ----
-recipesRouter.get('/recommended', async (_req, res) => {
+recipesRouter.get('/recommended', async (req, res) => {
   const userId = req.headers["user-id"];
 
   // 1) Get all recipes
