@@ -116,16 +116,17 @@ export default function LoginForm() {
                 }}
               >
                 <label style={{ fontSize: "0.9rem" }}>Password</label>
-                
-              </div>
-
-              <Input
+                <Input
                 type="password"
                 placeholder="Enter your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
+                
+              </div>
+
+              
               <span
                   style={{ fontSize: "0.85rem", color: "#4ea1ff", cursor: "pointer" }}
                 >
