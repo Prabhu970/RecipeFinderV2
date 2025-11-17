@@ -1,6 +1,6 @@
 import express from 'express';
-import { supabaseAdmin } from "./supabaseClient.js";
-import { generateAIRecipe } from "./pythonClient.js";
+import { supabaseAdmin } from './supabaseClient.js';
+import { generateAIRecipe } from './pythonClient.js';
 
 export const recipesRouter = express.Router();
 
@@ -48,43 +48,59 @@ function mapRecipeDetail(row) {
   };
 }
 
-// ---------------------------------------------
-// GET /recipes/recommended  (NO ALLERGY FILTER)
-// ---------------------------------------------
-recipesRouter.get('/recommended', async (req, res) => {
-  const { data, error } = await supabaseAdmin
-    .from("recipes")
-    .select(`
-      id, title, description, image_url,
-      cook_time_minutes, difficulty, rating, calories,
-      recipe_tags ( tags ( name ) )
-    `)
-    .limit(40);
+// ---- GET /recipes/recommended ----
+recipesRouter.get('/recommended', async (_req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('recipes')
+      .select(`
+        id,
+        title,
+        description,
+        image_url,
+        cook_time_minutes,
+        difficulty,
+        rating,
+        calories,
+        recipe_tags (
+          tags ( name )
+        )
+      `)
+      .order('rating', { ascending: false });
 
-  if (error) {
-    console.error(error);
-    return res.status(500).json({ error: error.message });
+    if (error) throw error;
+
+    res.json((data ?? []).map(mapRecipeSummary));
+  } catch (err) {
+    console.error('Error in /recipes/recommended', err);
+    res.status(500).send('Failed to load recipes');
   }
-
-  const mapped = (data ?? []).map(mapRecipeSummary);
-  res.json(mapped);
 });
 
-// ---------------------------------------------
-// GET /recipes/search  (NO ALLERGY FILTER)
-// ---------------------------------------------
+// ---- GET /recipes/search ----
 recipesRouter.get('/search', async (req, res) => {
   const { q, diet, maxTime } = req.query;
 
   try {
     let query = supabaseAdmin
-      .from("recipes")
+      .from('recipes')
       .select(`
-        id, title, image_url, cook_time_minutes, difficulty, rating,
-        recipe_tags ( tags ( name ) )
+        id,
+        title,
+        description,
+        image_url,
+        cook_time_minutes,
+        difficulty,
+        rating,
+        calories,
+        recipe_tags (
+          tags ( name )
+        )
       `);
 
-    if (q) query = query.ilike("title", `%${q}%`);
+    if (q) {
+      query = query.ilike('title', `%${q}%`);
+    }
 
     const { data, error } = await query.limit(100);
     if (error) throw error;
@@ -92,9 +108,9 @@ recipesRouter.get('/search', async (req, res) => {
     let mapped = (data ?? []).map(mapRecipeSummary);
 
     if (diet) {
-      const d = diet.toLowerCase();
+      const dietLower = diet.toLowerCase();
       mapped = mapped.filter((r) =>
-        (r.tags ?? []).some((t) => t.toLowerCase() === d)
+        (r.tags ?? []).some((t) => t.toLowerCase() === dietLower)
       );
     }
 
@@ -107,43 +123,51 @@ recipesRouter.get('/search', async (req, res) => {
 
     res.json(mapped);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to search recipes" });
+    console.error('Error in /recipes/search', err);
+    res.status(500).send('Failed to search recipes');
   }
 });
 
-// ---------------------------------------------
-// GET /recipes/:id
-// ---------------------------------------------
+// ---- GET /recipes/:id ----
 recipesRouter.get('/:id', async (req, res) => {
   const { id } = req.params;
 
-  const { data, error } = await supabaseAdmin
-    .from("recipes")
-    .select(`
-      id, title, image_url, cook_time_minutes, difficulty, rating, calories,
-      ingredients ( name, quantity ),
-      steps ( step_number, instruction ),
-      recipe_tags ( tags ( name ) )
-    `)
-    .eq("id", id)
-    .single();
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('recipes')
+      .select(`
+        id,
+        title,
+        description,
+        image_url,
+        cook_time_minutes,
+        difficulty,
+        rating,
+        calories,
+        ingredients ( name, quantity ),
+        steps ( step_number, instruction ),
+        recipe_tags ( tags ( name ) )
+      `)
+      .eq('id', id)
+      .maybeSingle();
 
-  if (error) return res.status(500).json({ error: error.message });
-  if (!data) return res.status(404).send("Recipe not found");
+    if (error) throw error;
+    if (!data) return res.status(404).send('Recipe not found');
 
-  res.json(mapRecipeDetail(data));
+    res.json(mapRecipeDetail(data));
+  } catch (err) {
+    console.error('Error in /recipes/:id', err);
+    res.status(500).send('Failed to load recipe');
+  }
 });
 
-// ---------------------------------------------
-// POST /recipes/generate-ai
-// ---------------------------------------------
+// ---- POST /recipes/generate-ai ----
 recipesRouter.post('/generate-ai', async (req, res) => {
   try {
-    const recipe = await generateAIRecipe(req.body);
-    res.json(recipe);
+    const generated = await generateAIRecipe(req.body);
+    res.json(generated);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to generate AI recipe" });
+    console.error('Error in /recipes/generate-ai', err);
+    res.status(500).send('Failed to generate recipe');
   }
 });
