@@ -62,12 +62,14 @@ RULES:
 """
 
     response = client.models.generate_content(
-        model=MODEL,
-        contents=[
-            Content(role="system", parts=[system]),
-            Content(role="user", parts=[user_prompt]),
-        ]
-    )
+            model=MODEL,
+            contents=[
+                Content(role="system", parts=[{"text": system}]),
+                Content(role="user", parts=[{"text": user_prompt}]),
+            ]
+        )
+
+       
 
     raw_text = response.text  # correct new API
 
