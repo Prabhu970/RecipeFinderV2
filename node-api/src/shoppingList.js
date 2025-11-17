@@ -1,6 +1,6 @@
 import express from "express";
 import { supabaseAdmin } from "./supabaseClient.js";
-import { cleanIngredient } from "./utils/cleanIngredient.js";
+import { cleanIngredient } from "./cleanIngredient.js";
 
 export const shoppingRouter = express.Router();
 
