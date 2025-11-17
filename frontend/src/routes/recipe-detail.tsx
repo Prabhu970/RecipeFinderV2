@@ -57,21 +57,48 @@ export function RecipeDetailRoute() {
         (r.tags ?? []).some((t) => (recipe.tags ?? []).includes(t))
     ).slice(0, 4) ?? [];
 
-  async function handleAddToShoppingList() {
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
-    if (!token) {
-      alert('Please sign in to use the shopping list.');
+async function handleAddToShoppingList() {
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  const user = data.session?.user;
+
+  if (!token || !user) {
+    alert("Please sign in to use the shopping list.");
+    return;
+  }
+
+  // send ingredients array EXACTLY as the backend expects
+  const payload = {
+    user_id: user.id,
+    items: recipe.ingredients
+  };
+
+  try {
+    const res = await fetch("https://recipefinderv2.onrender.com/shopping-list", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      console.error("Shopping list error:", err);
+      alert(err.error || "Failed to add ingredients.");
       return;
     }
-    await api.addShoppingItems(
-      recipe.id,
-      recipe.ingredients,
-      token
-    );
-    alert('Ingredients added to your shopping list.');
-    queryClient.invalidateQueries(['shopping-list']);
+
+    alert("Ingredients added to your shopping list.");
+    queryClient.invalidateQueries(["shopping-list"]);
+
+  } catch (err) {
+    console.error("Add to list failed:", err);
+    alert("Failed to connect to shopping list API.");
   }
+}
+
 
   async function requestSubstitutions() {
     setSubsLoading(true);

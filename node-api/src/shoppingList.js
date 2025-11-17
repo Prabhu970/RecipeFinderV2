@@ -1,62 +1,67 @@
+
 import express from "express";
 import { supabaseAdmin } from "./supabaseClient.js";
 import { cleanIngredient } from "./cleaningredient.js";
 
 export const shoppingRouter = express.Router();
 
-/**
- * POST /shopping-list
- * Add ingredient to shopping list
- * Auto-merge similar ingredients
- */
+// --------------------------
+// POST /shopping-list (Bulk)
+// --------------------------
 shoppingRouter.post("/", async (req, res) => {
   try {
-    const { user_id, ingredient } = req.body;
+    const { user_id, items } = req.body;
 
-    if (!ingredient) return res.status(400).json({ error: "Missing ingredient" });
-
-    const ingredient_clean = cleanIngredient(ingredient);
-
-    // If ingredient already exists → increment qty
-    const { data: existing } = await supabaseAdmin
-      .from("shopping_list")
-      .select("*")
-      .eq("user_id", user_id)
-      .eq("ingredient_clean", ingredient_clean)
-      .maybeSingle();
-
-    if (existing) {
-      const updatedQty = existing.total_qty + 1;
-
-      const { error } = await supabaseAdmin
-        .from("shopping_list")
-        .update({ total_qty: updatedQty })
-        .eq("id", existing.id);
-
-      if (error) throw error;
-
-      return res.json({ message: "Quantity updated", total_qty: updatedQty });
+    if (!user_id) {
+      return res.status(400).json({ error: "Missing user_id" });
     }
 
-    // Insert new row
-    const { error } = await supabaseAdmin.from("shopping_list").insert([
-      {
-        user_id,
-        ingredient,
-        ingredient_clean,
-        total_qty: 1,
-      },
-    ]);
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: "Missing items array" });
+    }
 
-    if (error) throw error;
+    const inserts = [];
 
-    res.json({ message: "Added to shopping list" });
+    for (const raw of items) {
+      const ingredient_clean = cleanIngredient(raw);
 
+      // Check if user already has this ingredient
+      const { data: existing } = await supabaseAdmin
+        .from("shopping_list")
+        .select("*")
+        .eq("user_id", user_id)
+        .eq("ingredient_clean", ingredient_clean)
+        .maybeSingle();
+
+      if (existing) {
+        // update qty
+        const newQty = existing.total_qty + 1;
+
+        await supabaseAdmin
+          .from("shopping_list")
+          .update({ total_qty: newQty })
+          .eq("id", existing.id);
+      } else {
+        inserts.push({
+          user_id,
+          ingredient: raw,
+          ingredient_clean,
+          total_qty: 1,
+        });
+      }
+    }
+
+    if (inserts.length > 0) {
+      await supabaseAdmin.from("shopping_list").insert(inserts);
+    }
+
+    res.json({ success: true, added: inserts.length });
   } catch (err) {
-    console.error("POST /shopping-list ERROR", err);
-    res.status(500).json({ error: "Server error adding item" });
+    console.error("Error POST /shopping-list", err);
+    res.status(500).json({ error: "Failed to add shopping items" });
   }
 });
+
 
 /**
  * GET /shopping-list
