@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabaseClient";
 
-export default function ShoppingList() {
+export default function ShoppingListRoute() {
   const [list, setList] = useState<any[]>([]);
 
   async function loadList() {
