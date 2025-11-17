@@ -14,9 +14,11 @@ const app = express();
 // CORS FIX FOR RENDER + VERCEL
 // ------------------------------
 const allowedOrigins = [
+  "*",
   "https://recipe-finder-v2-b8be-qp0kej4bd.vercel.app",
   "http://localhost:5173",
   "http://127.0.0.1:5173",
+  "*"
 ];
 
 // MAIN CORS MIDDLEWARE
