@@ -94,7 +94,7 @@ recipesRouter.get("/recommended", async (req, res) => {
     const allergies = profile?.allergies ?? "";
 
     // 3️⃣ Send recipes + allergies to Python LLM
-    const pyRes = await fetch(`${PY_URL}/filter-recipes-by-allergy`, {
+    const pyRes = await fetch(`${PY_URL}filter-recipes-by-allergy`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ allergies, recipes }),
