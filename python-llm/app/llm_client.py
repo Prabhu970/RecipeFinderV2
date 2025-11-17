@@ -63,12 +63,13 @@ RULES:
 
     response = client.models.generate_content(
             model=MODEL,
+            # 1. Use the system_instruction parameter for the system prompt
+            system_instruction=system,
             contents=[
-                Content(role="system", parts=[{"text": system}]),
+                # 2. Only include the user content in the contents list
                 Content(role="user", parts=[{"text": user_prompt}]),
             ]
         )
-
        
 
     raw_text = response.text  # correct new API
