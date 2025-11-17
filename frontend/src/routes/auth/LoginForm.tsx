@@ -112,6 +112,7 @@ export default function LoginForm() {
               <div>
                 <label style={{ fontSize: "0.9rem" }}>Password</label>
                            
+              </div>
               </div>               
                 <Input
                 type="password"
@@ -120,12 +121,8 @@ export default function LoginForm() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 style={{ marginTop: "0.3rem", marginLeft: "0.3rem" }}
-              />
-              
-
-              
-              
-            </div>
+              />        
+            
 
 
             <Button type="submit" disabled={loading}>
