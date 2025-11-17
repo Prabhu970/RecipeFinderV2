@@ -1,101 +1,106 @@
 import express from "express";
 import { supabaseAdmin } from "./supabaseClient.js";
-import { cleanIngredient } from "./cleaningredient.js";
+import { cleanIngredient } from "./utils/cleanIngredient.js";
 
 export const shoppingRouter = express.Router();
 
-// ADD INGREDIENT — WITH MERGING
-shoppingRouter.post("/add", async (req, res) => {
-  try {
-    const { user_id, ingredient, quantity } = req.body;
+// --------------------------------------------------
+// GET /shopping-list  (load shopping list)
+// --------------------------------------------------
+shoppingRouter.get("/", async (req, res) => {
+  const userId = req.headers["x-user-id"];
 
-    if (!user_id || !ingredient)
-      return res.status(400).json({ error: "Missing user_id or ingredient" });
+  if (!userId) return res.status(400).json({ error: "Missing user id" });
 
-    const cleanedName = cleanIngredient(ingredient);
+  const { data, error } = await supabaseAdmin
+    .from("shopping_list")
+    .select("*")
+    .eq("user_id", userId)
+    .order("ingredient_clean");
 
-    // check if this ingredient already exists for this user
-    const { data: existing } = await supabaseAdmin
+  if (error) return res.status(500).json(error);
+
+  res.json(data);
+});
+
+// --------------------------------------------------
+// POST /shopping-list  (ADD ITEM)
+// --------------------------------------------------
+shoppingRouter.post("/", async (req, res) => {
+  const userId = req.headers["x-user-id"];
+  const { ingredient } = req.body;
+
+  if (!userId) return res.status(400).json({ error: "Missing user id" });
+  if (!ingredient) return res.status(400).json({ error: "Missing ingredient" });
+
+  const ingredient_clean = cleanIngredient(ingredient);
+
+  // Does this ingredient already exist?
+  const { data: existing } = await supabaseAdmin
+    .from("shopping_list")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("ingredient_clean", ingredient_clean)
+    .maybeSingle();
+
+  if (existing) {
+    // Update +1 quantity
+    const { data, error } = await supabaseAdmin
       .from("shopping_list")
-      .select("*")
-      .eq("user_id", user_id)
-      .eq("ingredient_clean", cleanedName)
+      .update({ total_qty: existing.total_qty + 1 })
+      .eq("id", existing.id)
+      .select()
       .maybeSingle();
 
-    // If already exists → increment quantity
-    if (existing) {
-      const newQty = (existing.total_qty ?? 1) + (quantity ?? 1);
-
-      await supabaseAdmin
-        .from("shopping_list")
-        .update({ total_qty: newQty })
-        .eq("id", existing.id);
-
-      return res.json({ merged: true, id: existing.id, qty: newQty });
-    }
-
-    // Insert new ingredient
-    const { data, error } = await supabaseAdmin
-      .from("shopping_list")
-      .insert([
-        {
-          user_id,
-          ingredient: ingredient,
-          ingredient_clean: cleanedName,
-          total_qty: quantity ?? 1,
-        },
-      ])
-      .select()
-      .single();
-
-    if (error) throw error;
-
-    res.json(data);
-  } catch (err) {
-    console.error("Error adding:", err);
-    res.status(500).json({ error: "Could not add ingredient" });
+    if (error) return res.status(500).json(error);
+    return res.json(data);
   }
+
+  // Insert new item
+  const { data, error } = await supabaseAdmin
+    .from("shopping_list")
+    .insert({
+      user_id: userId,
+      ingredient,
+      ingredient_clean,
+      total_qty: 1,
+      checked: false,
+    })
+    .select()
+    .maybeSingle();
+
+  if (error) return res.status(500).json(error);
+  res.json(data);
 });
 
-// GET SHOPPING LIST (clean names only)
-shoppingRouter.get("/:user_id", async (req, res) => {
-  try {
-    const { user_id } = req.params;
+// --------------------------------------------------
+// PATCH /shopping-list/update-qty
+// --------------------------------------------------
+shoppingRouter.patch("/update-qty", async (req, res) => {
+  const { id, newQty } = req.body;
 
-    const { data, error } = await supabaseAdmin
-      .from("shopping_list")
-      .select("id, ingredient_clean, total_qty")
-      .eq("user_id", user_id)
-      .order("ingredient_clean", { ascending: true });
+  const { data, error } = await supabaseAdmin
+    .from("shopping_list")
+    .update({ total_qty: newQty })
+    .eq("id", id)
+    .select()
+    .maybeSingle();
 
-    if (error) throw error;
-
-    res.json(data);
-  } catch (err) {
-    console.error("Error fetching shopping list:", err);
-    res.status(500).json({ error: "Could not fetch shopping list" });
-  }
+  if (error) return res.status(500).json(error);
+  res.json(data);
 });
 
-/**
- * DELETE /shopping-list/:id
- */
+// --------------------------------------------------
+// DELETE /shopping-list/:id
+// --------------------------------------------------
 shoppingRouter.delete("/:id", async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { id } = req.params;
+  const { id } = req.params;
 
-    const { error } = await supabaseAdmin
-      .from("shopping_list")
-      .delete()
-      .eq("id", id)
-      .eq("user_id", userId);
+  const { data, error } = await supabaseAdmin
+    .from("shopping_list")
+    .delete()
+    .eq("id", id);
 
-    if (error) throw error;
-
-    res.json({ success: true });
-  } catch (err) {
-    console.error("Failed to delete shopping item:", err);
-    res.status(500).json({ error: "Delete failed" });
-  }
+  if (error) return res.status(500).json(error);
+  res.json({ success: true });
 });
