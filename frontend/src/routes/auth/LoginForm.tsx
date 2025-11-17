@@ -109,20 +109,11 @@ export default function LoginForm() {
 
             {/* PASSWORD */}
             <div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: "0.3rem",
-                }}
-              >
+              <div>
                 <label style={{ fontSize: "0.9rem" }}>Password</label>
-               <span
-                  style={{ fontSize: "0.85rem", color: "#4ea1ff", cursor: "pointer" }}
-                >
+               <span style={{ fontSize: "0.85rem", color: "#4ea1ff", cursor: "pointer" }}                >
                   Forgot?
-                </span>
-                
+                </span>                
               </div>
                
                 <Input
