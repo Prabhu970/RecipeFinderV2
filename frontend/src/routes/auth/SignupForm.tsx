@@ -1,17 +1,18 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabaseClient";
+
 import { Card, CardBody } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 
-export function SignupForm() {
+export default function SignupForm() {
   const navigate = useNavigate();
 
   const [fullName, setFullName] = useState("");
-  const [email, setEmail]       = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading]   = useState(false);
+  const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
   async function handleSignup(e: React.FormEvent) {
@@ -22,9 +23,7 @@ export function SignupForm() {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: { full_name: fullName }
-      }
+      options: { data: { full_name: fullName } },
     });
 
     if (error) {
@@ -33,6 +32,7 @@ export function SignupForm() {
       return;
     }
 
+    // after sign up → go to profile-setup
     navigate("/profile-setup");
   }
 
@@ -97,11 +97,10 @@ export function SignupForm() {
           )}
 
           <form onSubmit={handleSignup} style={{ display: "grid", gap: "1rem" }}>
-            {/* NAME */}
+            {/* FULL NAME */}
             <div>
               <label style={{ fontSize: "0.9rem" }}>Full name</label>
               <Input
-                type="text"
                 placeholder="John Doe"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
@@ -136,53 +135,23 @@ export function SignupForm() {
               />
             </div>
 
-            <Button type="submit" disabled={loading}>
-              {loading ? "Creating account..." : "Sign Up"}
-            </Button>
+            {/* SMALLER SIGN UP BUTTON */}
+            <div style={{ display: "flex", justifyContent: "center" }}>
+              <Button
+                type="submit"
+                disabled={loading}
+                style={{
+                  padding: "0.45rem 1.2rem",
+                  fontSize: "0.9rem",
+                  borderRadius: "8px",
+                }}
+              >
+                {loading ? "Creating..." : "Sign Up"}
+              </Button>
+            </div>
           </form>
 
-          {/* DIVIDER */}
-          <div
-            style={{
-              margin: "1.5rem 0",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-            }}
-          >
-            <div style={{ flexGrow: 1, height: "1px", background: "rgba(255,255,255,0.2)" }} />
-            <span style={{ fontSize: "0.8rem", opacity: 0.7 }}>Or continue with</span>
-            <div style={{ flexGrow: 1, height: "1px", background: "rgba(255,255,255,0.2)" }} />
-          </div>
-
-          {/* SOCIAL buttons (same as login) */}
-          <div style={{ display: "flex", gap: "0.75rem", justifyContent: "center" }}>
-            <button
-              style={{
-                padding: "0.6rem 1.2rem",
-                borderRadius: "8px",
-                border: "1px solid rgba(255,255,255,0.25)",
-                background: "rgba(255,255,255,0.05)",
-                color: "white",
-                cursor: "pointer",
-              }}
-            >
-              Google
-            </button>
-            <button
-              style={{
-                padding: "0.6rem 1.2rem",
-                borderRadius: "8px",
-                border: "1px solid rgba(255,255,255,0.25)",
-                background: "rgba(255,255,255,0.05)",
-                color: "white",
-                cursor: "pointer",
-              }}
-            >
-              GitHub
-            </button>
-          </div>
-
+          {/* ALREADY HAVE ACCOUNT */}
           <p
             style={{
               textAlign: "center",
