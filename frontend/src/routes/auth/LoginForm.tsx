@@ -96,7 +96,9 @@ export default function LoginForm() {
             {/* EMAIL */}
             <div>
               <label style={{ fontSize: "0.9rem" }}>Email</label>
-              <Input
+              
+            </div>
+            <Input
                 type="email"
                 placeholder="name@example.com"
                 value={email}
@@ -104,7 +106,6 @@ export default function LoginForm() {
                 required
                 style={{ marginTop: "0.3rem", marginLeft: "0.3rem" }}
               />
-            </div>
 
             {/* PASSWORD */}
             <div>
@@ -115,7 +116,15 @@ export default function LoginForm() {
                   marginBottom: "0.3rem",
                 }}
               >
-                <label style={{ fontSize: "0.9rem" }}>Password</label>
+               <span
+                  style={{ fontSize: "0.85rem", color: "#4ea1ff", cursor: "pointer" }}
+                >
+                  Forgot?
+                </span>
+                
+              </div>
+
+               <label style={{ fontSize: "0.9rem" }}>Password</label>
                 <Input
                 type="password"
                 placeholder="Enter your password"
@@ -123,15 +132,9 @@ export default function LoginForm() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
-                
-              </div>
 
               
-              <span
-                  style={{ fontSize: "0.85rem", color: "#4ea1ff", cursor: "pointer" }}
-                >
-                  Forgot?
-                </span>
+              
             </div>
 
 
