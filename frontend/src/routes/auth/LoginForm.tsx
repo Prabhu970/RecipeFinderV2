@@ -125,9 +125,20 @@ export default function LoginForm() {
             
 
 
-            <Button type="submit" disabled={loading}>
+            <div style={{ display: "flex", justifyContent: "center" }}>
+            <Button
+              type="submit"
+              size="sm"
+              disabled={loading}
+              style={{
+                padding: "0.45rem 1.2rem",
+                fontSize: "0.9rem",
+                borderRadius: "8px",
+              }}
+            >
               {loading ? "Signing in..." : "Sign In"}
             </Button>
+          </div>
           </form>
 
           <p
