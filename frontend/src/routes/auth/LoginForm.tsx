@@ -102,7 +102,7 @@ export default function LoginForm() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                style={{ marginTop: "0.3rem" }}
+                style={{ marginTop: "0.3rem", marginLeft: "0.3rem" }}
               />
             </div>
 
@@ -151,25 +151,7 @@ export default function LoginForm() {
             <div style={{ flexGrow: 1, height: "1px", background: "rgba(255,255,255,0.2)" }} />
           </div>
 
-          {/* SOCIAL BUTTONS */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "1rem",
-            }}
-          >
-            <Button variant="outline">G Google</Button>
-            <Button variant="outline">🐙 GitHub</Button>
-          </div>
-
-          <p
-            style={{
-              textAlign: "center",
-              marginTop: "1.5rem",
-              opacity: 0.85,
-            }}
-          >
+          
             Don’t have an account?{" "}
             <Link to="/signup" style={{ color: "#4ea1ff" }}>
               Sign up
