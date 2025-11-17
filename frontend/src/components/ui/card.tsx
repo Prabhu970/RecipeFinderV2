@@ -13,7 +13,8 @@ export function Card({
         className
       )}
     style={{
-        border: "1px solid rgba(255,255,255,0.18)", // ← HARD BORDER (cannot be overridden)
+        border: "1px solid rgba(255,255,255,0.18)",
+        borderRadius:"12px", // ← HARD BORDER (cannot be overridden)
       }}
     
       {...props}
