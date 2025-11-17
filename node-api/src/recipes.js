@@ -1,18 +1,19 @@
 import express from "express";
-import { supabaseAdmin, supabase } from "./supabaseClient.js";   // ✅ FIXED IMPORT
+import { supabaseAdmin } from "./supabaseClient.js";  // ✅ fixed import
 import { generateAIRecipe } from "./pythonClient.js";
 import fetch from "node-fetch";
 
 export const recipesRouter = express.Router();
 
-/* -------------------------- UTIL: MAP TAGS --------------------------- */
+/* ====================================================================== */
+/* Utility mappers */
+/* ====================================================================== */
 function mapTags(row) {
   return (row.recipe_tags ?? [])
     .map((rt) => rt.tags?.name)
     .filter(Boolean);
 }
 
-/* ----------------------- UTIL: SUMMARY MAPPER ------------------------ */
 function mapRecipeSummary(row) {
   return {
     id: row.id,
@@ -22,11 +23,13 @@ function mapRecipeSummary(row) {
     difficulty: row.difficulty,
     rating: row.rating,
     tags: mapTags(row),
-    ingredients: [], // prevent undefined crashes
+    ingredients: row.ingredients?.map(i => i.name) ?? [],
   };
 }
 
-/* ---------------------- UTIL: PY LLM ALLERGY CHECK -------------------- */
+/* ====================================================================== */
+/* Python LLM helper */
+/* ====================================================================== */
 async function isRecipeUnsafe(allergies, ingredients) {
   const res = await fetch(`${process.env.PYTHON_LLM_URL}/check-allergy`, {
     method: "POST",
@@ -34,20 +37,19 @@ async function isRecipeUnsafe(allergies, ingredients) {
     body: JSON.stringify({ allergies, ingredients }),
   });
 
-  return await res.json(); // { unsafe, reason }
+  return res.json(); // { unsafe: boolean, reason: string }
 }
 
-/* ======================================================================= */
-/*                          GET /recipes/recommended                       */
-/* ======================================================================= */
+/* ====================================================================== */
+/* GET /recipes/recommended */
+/* ====================================================================== */
 recipesRouter.get("/recommended", async (req, res) => {
   try {
     const userId = req.headers["user-id"];
-    if (!userId) {
+    if (!userId)
       return res.status(400).json({ error: "Missing user-id header" });
-    }
 
-    // 1) Get all recipes
+    // 1. Get recipes
     const { data: recipes, error } = await supabaseAdmin
       .from("recipes")
       .select(`
@@ -59,14 +61,15 @@ recipesRouter.get("/recommended", async (req, res) => {
         difficulty,
         rating,
         calories,
+        ingredients ( name, quantity ),
         recipe_tags ( tags ( name ) )
       `);
 
     if (error) throw error;
 
-    const mapped = (recipes ?? []).map(mapRecipeSummary);
+    const mapped = recipes.map(mapRecipeSummary);
 
-    // 2) Load user allergies
+    // 2. Get user allergies
     const { data: profile } = await supabaseAdmin
       .from("profiles")
       .select("allergies")
@@ -75,7 +78,7 @@ recipesRouter.get("/recommended", async (req, res) => {
 
     const allergies = profile?.allergies || "";
 
-    // 3) Ask Python LLM to sort safe vs unsafe
+    // 3. Ask Python LLM to filter them
     const py = await fetch(
       `${process.env.PYTHON_LLM_URL}/filter-recipes-by-allergy`,
       {
@@ -85,21 +88,21 @@ recipesRouter.get("/recommended", async (req, res) => {
       }
     );
 
-    const filtered = await py.json();
-    return res.json(filtered);
+    const result = await py.json();
+    return res.json(result);
   } catch (err) {
-    console.error("Error in /recipes/recommended:", err);
-    return res.status(500).json({ error: "Failed to load recommended recipes" });
+    console.error("ERROR /recipes/recommended:", err);
+    return res.status(500).json({ error: "Failed to load recommended" });
   }
 });
 
-/* ======================================================================= */
-/*                             GET /recipes/search                         */
-/* ======================================================================= */
+/* ====================================================================== */
+/* GET /recipes/search */
+/* ====================================================================== */
 recipesRouter.get("/search", async (req, res) => {
-  const { q, diet, maxTime, allergies = "" } = req.query;
-
   try {
+    const { q, diet, maxTime, allergies = "" } = req.query;
+
     let query = supabaseAdmin
       .from("recipes")
       .select(`
@@ -111,6 +114,7 @@ recipesRouter.get("/search", async (req, res) => {
         difficulty,
         rating,
         calories,
+        ingredients ( name, quantity ),
         recipe_tags ( tags ( name ) )
       `);
 
@@ -121,46 +125,46 @@ recipesRouter.get("/search", async (req, res) => {
 
     let mapped = data.map(mapRecipeSummary);
 
-    // diet filter
     if (diet) {
-      const d = diet.toLowerCase();
+      const lowDiet = diet.toLowerCase();
       mapped = mapped.filter((r) =>
-        r.tags?.map((t) => t.toLowerCase()).includes(d)
+        r.tags?.some((t) => t.toLowerCase() === lowDiet)
       );
     }
 
-    // time filter
     if (maxTime) {
-      const max = Number(maxTime);
       mapped = mapped.filter(
-        (r) => !r.cookTimeMinutes || r.cookTimeMinutes <= max
+        (r) => !r.cookTimeMinutes || r.cookTimeMinutes <= Number(maxTime)
       );
     }
 
-    // allergy filtering (Python LLM)
+    // allergy filtering
     const safe = [];
     const unsafe = [];
 
     for (const r of mapped) {
-      const check = await isRecipeUnsafe(allergies, r.ingredients ?? []);
-      if (check.unsafe) unsafe.push({ ...r, unsafeReason: check.reason });
-      else safe.push(r);
+      const check = await isRecipeUnsafe(allergies, r.ingredients);
+      if (check.unsafe) {
+        unsafe.push({ ...r, unsafeReason: check.reason });
+      } else {
+        safe.push(r);
+      }
     }
 
     res.json({ safe, unsafe });
   } catch (err) {
-    console.error("Error in /recipes/search:", err);
+    console.error("ERROR /recipes/search:", err);
     res.status(500).send("Failed to search recipes");
   }
 });
 
-/* ======================================================================= */
-/*                          GET /recipes/:id                               */
-/* ======================================================================= */
+/* ====================================================================== */
+/* GET /recipes/:id */
+/* ====================================================================== */
 recipesRouter.get("/:id", async (req, res) => {
-  const { id } = req.params;
-
   try {
+    const { id } = req.params;
+
     const { data, error } = await supabaseAdmin
       .from("recipes")
       .select(`
@@ -182,23 +186,22 @@ recipesRouter.get("/:id", async (req, res) => {
     if (error) throw error;
     if (!data) return res.status(404).send("Recipe not found");
 
-    const mapped = mapRecipeSummary(data);
-    res.json(mapped);
+    res.json(mapRecipeSummary(data));
   } catch (err) {
-    console.error("Error in /recipes/:id:", err);
-    res.status(500).send("Failed to load recipe");
+    console.error("ERROR /recipes/:id:", err);
+    res.status(500).send("Failed to load recipe detail");
   }
 });
 
-/* ======================================================================= */
-/*                        POST /recipes/generate-ai                        */
-/* ======================================================================= */
+/* ====================================================================== */
+/* POST /recipes/generate-ai */
+/* ====================================================================== */
 recipesRouter.post("/generate-ai", async (req, res) => {
   try {
-    const generated = await generateAIRecipe(req.body);
-    res.json(generated);
+    const out = await generateAIRecipe(req.body);
+    res.json(out);
   } catch (err) {
-    console.error("Error in /recipes/generate-ai", err);
+    console.error("ERROR /recipes/generate-ai:", err);
     res.status(500).send("Failed to generate recipe");
   }
 });
