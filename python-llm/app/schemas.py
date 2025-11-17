@@ -21,18 +21,3 @@ class RecipeDetail(BaseModel):
     rating: Optional[float] = None
     tags: Optional[List[str]] = None
     image_url: Optional[str] = None
-
-class AllergyFilterRecipe(BaseModel):
-    id: str
-    title: str
-    description: Optional[str] = None
-    ingredients: List[str]
-    tags: List[str] = []
-
-class AllergyFilterRequest(BaseModel):
-    allergies: str
-    recipes: List[AllergyFilterRecipe]
-
-class AllergyFilterResponse(BaseModel):
-    safe: List[AllergyFilterRecipe]
-    unsafe: List[AllergyFilterRecipe]

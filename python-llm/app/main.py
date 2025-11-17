@@ -5,50 +5,79 @@ from fastapi.middleware.cors import CORSMiddleware
 from google import genai
 from google.genai.types import Content
 from .schemas import GenerateRecipeRequest, RecipeDetail
+
+from .schemas import GenerateRecipeRequest, RecipeDetail
 from .llm_client import generate_recipe as generate_recipe_llm
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # you can restrict this to your Vercel origin later
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# Use the same env var name as the README + llm_client
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 MODEL = os.getenv("GEMINI_MODEL", "models/gemini-2.5-flash")
 
+def extract_json(text: str):
+    """Safely extract JSON object from LLM output."""
+    try:
+        return json.loads(text)
+    except:
+        pass
+
+    import re
+    match = re.search(r"\{[\s\S]*\}", text)
+    if match:
+        return json.loads(match.group(0))
+
+    raise ValueError("LLM returned invalid JSON")
+
+
 @app.post("/generate-recipe", response_model=RecipeDetail)
 async def generate_recipe_endpoint(payload: GenerateRecipeRequest) -> RecipeDetail:
+    """
+    Main AI recipe generator endpoint used by:
+      - frontend (PYTHON_LLM_URL/generate-recipe)
+      - node-api/src/pythonClient.js
+    """
     return generate_recipe_llm(payload)
+
 
 @app.post("/ingredient-substitutions")
 async def ingredient_substitutions(payload: dict):
     title = payload.get("recipeTitle", "")
     ingredients = payload.get("ingredients", [])
 
-    system = "Provide ingredient substitutions as JSON only."
-    prompt = f"""
-Return only JSON:
-{{
-  "suggestions": ["sub1", "sub2", "sub3"]
-}}
-
-Recipe: {title}
-Ingredients: {ingredients}
-"""
-
-    resp = client.models.generate_content(
-        model=MODEL,
-        contents=[
-            Content(role="system", parts=[system]),
-            Content(role="user", parts=[prompt]),
-        ],
+    system = (
+        "You are a culinary expert. Provide useful ingredient substitutions in strict JSON."
     )
 
+    prompt = f"""
+Return only JSON:
+
+{{ "suggestions": ["sub1", "sub2", "sub3"] }}
+
+Recipe: {title}
+Ingredients: {", ".join(ingredients)}
+"""
+
     try:
-        return json.loads(resp.text)
-    except:
-        return {"suggestions": ["Unable to parse substitutions."]}
+        response = client.models.generate_content(
+            model=MODEL,
+            contents=[
+                Content(role="system", parts=[system]),
+                Content(role="user", parts=[prompt]),
+            ]
+        )
+
+        raw = response.text
+        data = extract_json(raw)
+        return data
+
+    except Exception as e:
+        return {"suggestions": [f"Error from AI service: {str(e)}"]}
