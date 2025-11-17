@@ -21,7 +21,7 @@ app.add_middleware(
 
 # Use the same env var name as the README + llm_client
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-MODEL = os.getenv("GEMINI_MODEL", "models/gemini-2.5-flash")
+MODEL = os.getenv("GEMINI_MODEL", "models/gemini-2.5-pro")
 
 def extract_json(text: str):
     """Safely extract JSON object from LLM output."""

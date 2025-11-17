@@ -6,7 +6,7 @@ from .schemas import GenerateRecipeRequest, RecipeDetail
 
 # Configure Gemini
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-MODEL = os.getenv("GEMINI_MODEL", "models/gemini-2.5-flash")
+MODEL = os.getenv("GEMINI_MODEL", "models/gemini-2.5-pro")
 
 
 def extract_json(text: str):
